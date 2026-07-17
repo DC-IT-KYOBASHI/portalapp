@@ -1,0 +1,35 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer utilities {
+  .glass-panel {
+    @apply bg-white/40 backdrop-blur-xl border border-white/30 shadow-[0_8px_32px_0_rgba(31,38,135,0.1)] 
+           dark:bg-slate-900/50 dark:border-slate-700/50 dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.3)];
+  }
+}
+
+body {
+  @apply text-slate-800 transition-colors duration-500 
+         dark:text-slate-100;
+
+  /* モダンなグラデーション背景（ライトモード） */
+  background:
+    radial-gradient(at 0% 0%, hsla(210, 100%, 95%, 1) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, hsla(280, 100%, 95%, 1) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, hsla(320, 100%, 95%, 1) 0px, transparent 50%),
+    radial-gradient(at 0% 100%, hsla(160, 100%, 95%, 1) 0px, transparent 50%);
+  background-color: #f8fafc;
+  background-attachment: fixed;
+  min-height: 100vh;
+}
+
+.dark body {
+  /* ダークモード用の深いグラデーション背景 */
+  background:
+    radial-gradient(at 0% 0%, hsla(220, 50%, 15%, 1) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, hsla(260, 40%, 15%, 1) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, hsla(320, 40%, 10%, 1) 0px, transparent 50%),
+    radial-gradient(at 0% 100%, hsla(200, 50%, 10%, 1) 0px, transparent 50%);
+  background-color: #0f172a;
+}
