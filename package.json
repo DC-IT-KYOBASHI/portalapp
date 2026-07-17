@@ -11,7 +11,10 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "format": "prettier --write \"src/**/*.{js,jsx,ts,tsx,css}\""
+    "format": "prettier --write \"src/**/*.{js,jsx,ts,tsx,css}\"",
+    "build:test": "tsc -b && vite build --mode test",
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d dist"
   },
   "dependencies": {
     "react": "^19.2.7",
@@ -24,6 +27,7 @@
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.3",
     "autoprefixer": "^10.5.2",
+    "gh-pages": "^6.3.0",
     "oxlint": "^1.71.0",
     "postcss": "^8.5.16",
     "prettier": "^3.9.5",

@@ -1,42 +1,44 @@
-name: Deploy static content to Pages
+name: Deploy to GitHub Pages
 
 on:
+  # mainブランチにプッシュされた時に実行
   push:
-    branches: ['main']
+    branches:
+      - main
+  # 手動でも実行できるようにする
+  workflow_dispatch:
 
+# GITHUB_TOKENの権限設定 (GitHub Pagesへのデプロイに必要)
 permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: 'pages'
-  cancel-in-progress: true
+  contents: write
 
 jobs:
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+  build-and-deploy:
     runs-on: ubuntu-latest
+    
     steps:
-      - name: Checkout
+      # 1. リポジトリのコードを取得
+      - name: Checkout Repository
         uses: actions/checkout@v4
-      - name: Set up Node
+        
+      # 2. Node.js のセットアップ
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: 'npm'
-      - name: Install dependencies
+          
+      # 3. 依存関係のインストール
+      - name: Install Dependencies
         run: npm ci
-      - name: Build
+        
+      # 4. 本番用ビルドの実行
+      - name: Build Project
         run: npm run build
-      - name: Setup Pages
-        uses: actions/configure-pages@v4
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: './dist'
+        
+      # 5. GitHub Pages (gh-pagesブランチ) へデプロイ
       - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist
