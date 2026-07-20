@@ -11,7 +11,7 @@ export default function Changelog() {
     // APIから更新履歴を取得（共通のfetchApiを使用）
     const getChangelogs = async () => {
       try {
-        const data = await fetchApi<ChangelogType[]>('/changelog.php')
+        const data = await fetchApi<ChangelogType[]>('?api=true&module=Changelog')
         setChangelogs(data)
       } catch (err: any) {
         setError(err.message || 'データの取得に失敗しました')

@@ -18,7 +18,7 @@ export default function FeedbackForm() {
 
     try {
       // 共通API関数を使用して送信
-      await fetchApi('/feedback.php', {
+      await fetchApi('?api=true&module=Feedback', {
         method: 'POST',
         body: JSON.stringify({ type, title, description }),
       })
