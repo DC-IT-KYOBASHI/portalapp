@@ -63,10 +63,15 @@ export default function PortalHome() {
           href="https://dcitex-kyobashi-se.joinus-dc-kyobashi.com/"
           target="_blank"
           rel="noopener noreferrer"
-          className="glass-panel rounded-3xl p-6 flex flex-col items-start transition-all duration-300 hover:shadow-xl hover:-translate-y-1 group border border-blue-500/30 dark:border-blue-500/20 bg-blue-500/5"
+          className="glass-panel rounded-3xl p-6 flex flex-col items-start transition-all duration-300 hover:shadow-xl hover:-translate-y-1 group border border-blue-500/30 dark:border-blue-500/20 bg-blue-500/5 relative overflow-hidden"
         >
-          <div className="text-4xl mb-3 group-hover:scale-110 transition-transform origin-left">
-            🏢
+          <div className="flex justify-between items-start w-full mb-3">
+            <div className="text-4xl group-hover:scale-110 transition-transform origin-left">
+              🏢
+            </div>
+            <span className="text-[10px] bg-blue-500/10 text-blue-600 dark:bg-blue-500/20 dark:text-blue-300 border border-blue-500/20 px-2 py-0.5 rounded font-bold">
+              内部NW専用
+            </span>
           </div>
           <h3 className="text-xl font-bold mb-2 group-hover:text-blue-500 transition-colors">
             システム情報部 総合ポータル
