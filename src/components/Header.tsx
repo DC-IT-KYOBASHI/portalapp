@@ -116,11 +116,16 @@ export default function Header() {
           
           {/* 裏側の管理画面へのリンク */}
           <a 
-            href="https://dcitex-kyobashi-se.joinus-dc-kyobashi.com/members/" 
-            className="p-3 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 flex items-center gap-3 transition-colors"
+            href="https://dcitex-kyobashi-se.joinus-dc-kyobashi.com/" 
+            className="p-3 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 flex items-center justify-between transition-colors group"
           >
-            <span className="text-xl">🔒</span>
-            <span className="text-sm font-bold">システム情報部専用</span>
+            <div className="flex items-center gap-3">
+              <span className="text-xl group-hover:scale-110 transition-transform">🔒</span>
+              <span className="text-sm font-bold">システム情報部 総合ポータル</span>
+            </div>
+            <span className="text-[10px] bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400 px-2 py-0.5 rounded font-bold">
+              内部NW専用
+            </span>
           </a>
         </div>
       )}
