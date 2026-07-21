@@ -71,7 +71,17 @@ await fetchApi('?api=true&module=Feedback', {
 });
 ```
 
-APIの通信先URLは、環境変数ファイル（`.env.production` またはローカルの `.env`）の `VITE_API_URL` によって切り替わります。
+APIへのリクエスト時、パスは `src/config.ts` の `API_BASE_URL` に結合されます。
+現在のバックエンドはフロントコントローラパターンを採用しているため、`API_BASE_URL` にはバックエンドのルートURL（`https://dcitex.../`）が設定されており、そこに `?api=true&module=XXX` というクエリが付与されます。
+
+※通信先URLは、本番環境と開発環境で `import.meta.env.DEV` によって切り替わります（`.env.production` の `VITE_API_URL` は現在使用していません）。
+
+---
+
+## 🔒 5. 内部ネットワーク専用の管理画面について
+
+トップ画面のアプリ一覧や、ヘッダーのメニュー内にある「🏢 システム情報部 総合ポータル」へのリンクは、**内部ネットワーク（社内環境）専用**の画面への直リンクとなっています。
+外部（スマホの4G回線等）からアクセスした場合はIPアドレス制限により「403 Forbidden」となります。
 
 ---
 
