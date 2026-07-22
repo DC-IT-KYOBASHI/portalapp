@@ -17,10 +17,10 @@ export default function PomodoroTimer() {
         setTimers(JSON.parse(saved))
       } catch (e) {
         console.error('Failed to parse saved timers')
-        setTimers([{ id: 'default-1', taskName: '', workMinutes: 25, breakMinutes: 5 }])
+        setTimers([{ id: 'default-1', taskName: '', workMinutes: 25, breakMinutes: 5, isActive: false, isWorkMode: true, timeLeft: 25 * 60, lastUpdated: Date.now() }])
       }
     } else {
-      setTimers([{ id: 'default-1', taskName: '', workMinutes: 25, breakMinutes: 5 }])
+      setTimers([{ id: 'default-1', taskName: '', workMinutes: 25, breakMinutes: 5, isActive: false, isWorkMode: true, timeLeft: 25 * 60, lastUpdated: Date.now() }])
     }
     setIsLoaded(true)
   }, [])
@@ -40,6 +40,10 @@ export default function PomodoroTimer() {
       taskName: '',
       workMinutes: 25,
       breakMinutes: 5,
+      isActive: false,
+      isWorkMode: true,
+      timeLeft: 25 * 60,
+      lastUpdated: Date.now()
     }
     setTimers([...timers, newTimer])
   }

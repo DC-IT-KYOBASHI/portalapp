@@ -25,4 +25,8 @@ export interface TimerData {
   taskName: string;
   workMinutes: number;
   breakMinutes: number;
+  isActive?: boolean;
+  isWorkMode?: boolean;
+  timeLeft?: number;
+  lastUpdated?: number;
 }

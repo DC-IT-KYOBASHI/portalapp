@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect } from 'react'
 import type { TimerData } from '../../../types'
 
 interface TimerCardProps {
@@ -8,24 +8,38 @@ interface TimerCardProps {
 }
 
 export const TimerCard: React.FC<TimerCardProps> = ({ data, onDelete, onUpdate }) => {
-  const [timeLeft, setTimeLeft] = useState(data.workMinutes * 60)
-  const [isActive, setIsActive] = useState(false)
-  const [isWorkMode, setIsWorkMode] = useState(true)
+  const [timeLeft, setTimeLeft] = useState(() => {
+    let initialTime = data.timeLeft ?? (data.workMinutes * 60)
+    if (data.isActive && data.lastUpdated) {
+      const elapsed = Math.floor((Date.now() - data.lastUpdated) / 1000)
+      initialTime = Math.max(0, initialTime - elapsed)
+    }
+    return initialTime
+  })
+  const [isActive, setIsActive] = useState(data.isActive ?? false)
+  const [isWorkMode, setIsWorkMode] = useState(data.isWorkMode ?? true)
   const [isEditing, setIsEditing] = useState(false)
 
   // 編集用の一時的な状態
   const [editWorkMinutes, setEditWorkMinutes] = useState(data.workMinutes)
   const [editBreakMinutes, setEditBreakMinutes] = useState(data.breakMinutes)
 
-  // 親へ即座に更新を反映するためのRef
-  const isFirstRender = useRef(true)
-
   useEffect(() => {
     let interval: ReturnType<typeof setInterval> | null = null
 
     if (isActive && timeLeft > 0) {
       interval = setInterval(() => {
-        setTimeLeft((time) => time - 1)
+        setTimeLeft((time) => {
+          const newTime = time - 1
+          onUpdate(data.id, {
+            ...data,
+            timeLeft: newTime,
+            isActive: true,
+            isWorkMode,
+            lastUpdated: Date.now(),
+          })
+          return newTime
+        })
       }, 1000)
     } else if (isActive && timeLeft === 0) {
       setIsActive(false)
@@ -36,7 +50,16 @@ export const TimerCard: React.FC<TimerCardProps> = ({ data, onDelete, onUpdate }
           : `休憩終了です！作業に戻りましょう。`
       )
       setIsWorkMode(nextIsWorkMode)
-      setTimeLeft(nextIsWorkMode ? data.workMinutes * 60 : data.breakMinutes * 60)
+      const nextTime = nextIsWorkMode ? data.workMinutes * 60 : data.breakMinutes * 60
+      setTimeLeft(nextTime)
+      
+      onUpdate(data.id, {
+        ...data,
+        timeLeft: nextTime,
+        isActive: false,
+        isWorkMode: nextIsWorkMode,
+        lastUpdated: Date.now(),
+      })
     }
 
     return () => {
@@ -44,28 +67,43 @@ export const TimerCard: React.FC<TimerCardProps> = ({ data, onDelete, onUpdate }
     }
   }, [isActive, timeLeft, isWorkMode, data.workMinutes, data.breakMinutes, data.taskName])
 
-  // taskNameなどの変更を親に伝播（ローカルストレージ保存用）
-  useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false
-      return
-    }
-    // 親に変更を通知（毎回のレンダリングで呼ぶと無限ループの危険があるので注意、今回はボタンでSaveするかOnBlurで呼ぶように設計）
-  }, [data])
-
   const toggleTimer = () => {
-    setIsActive(!isActive)
+    const nextActive = !isActive
+    setIsActive(nextActive)
+    onUpdate(data.id, {
+      ...data,
+      isActive: nextActive,
+      timeLeft,
+      isWorkMode,
+      lastUpdated: Date.now()
+    })
   }
 
   const resetTimer = () => {
     setIsActive(false)
-    setTimeLeft(isWorkMode ? data.workMinutes * 60 : data.breakMinutes * 60)
+    const nextTime = isWorkMode ? data.workMinutes * 60 : data.breakMinutes * 60
+    setTimeLeft(nextTime)
+    onUpdate(data.id, {
+      ...data,
+      isActive: false,
+      timeLeft: nextTime,
+      isWorkMode,
+      lastUpdated: Date.now()
+    })
   }
 
   const switchMode = (toWorkMode: boolean) => {
     setIsActive(false)
     setIsWorkMode(toWorkMode)
-    setTimeLeft(toWorkMode ? data.workMinutes * 60 : data.breakMinutes * 60)
+    const nextTime = toWorkMode ? data.workMinutes * 60 : data.breakMinutes * 60
+    setTimeLeft(nextTime)
+    onUpdate(data.id, {
+      ...data,
+      isActive: false,
+      timeLeft: nextTime,
+      isWorkMode: toWorkMode,
+      lastUpdated: Date.now()
+    })
   }
 
   const handleSaveConfig = () => {
