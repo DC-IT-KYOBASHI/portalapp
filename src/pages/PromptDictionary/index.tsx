@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from 'react'
-import { promptCategories, type PromptData, type PromptCategory } from './data/prompts'
+import { promptCategories, type PromptCategory } from './data/prompts'
+import type { PromptData } from '../../types'
 import { fetchPromptsFromWP } from './data/api'
 import PromptModal from './components/PromptModal'
 

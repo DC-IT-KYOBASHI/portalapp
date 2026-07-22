@@ -1,11 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-
-export interface TimerData {
-  id: string
-  taskName: string
-  workMinutes: number
-  breakMinutes: number
-}
+import type { TimerData } from '../../../types'
 
 interface TimerCardProps {
   data: TimerData

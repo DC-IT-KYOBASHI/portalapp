@@ -1,4 +1,5 @@
-import { type PromptData, initialPrompts } from './prompts'
+import type { PromptData } from '../../../types'
+import { initialPrompts } from './prompts'
 import { fetchApi } from '../../../utils/api'
 
 /**

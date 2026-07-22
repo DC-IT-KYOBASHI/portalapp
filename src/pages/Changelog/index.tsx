@@ -1,27 +1,14 @@
-import { useEffect, useState } from 'react'
-import { fetchApi } from '../../utils/api'
+import { useEffect } from 'react'
+import { useApi } from '../../hooks/useApi'
 import type { Changelog as ChangelogType } from '../../types'
 
 export default function Changelog() {
-  const [changelogs, setChangelogs] = useState<ChangelogType[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const { data, error, isLoading, execute } = useApi<ChangelogType[]>([])
+  const changelogs = data || []
 
   useEffect(() => {
-    // APIから更新履歴を取得（共通のfetchApiを使用）
-    const getChangelogs = async () => {
-      try {
-        const data = await fetchApi<ChangelogType[]>('?api=true&module=Changelog')
-        setChangelogs(data)
-      } catch (err: any) {
-        setError(err.message || 'データの取得に失敗しました')
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    getChangelogs()
-  }, [])
+    execute('?api=true&module=Changelog')
+  }, [execute])
 
   return (
     <div className="max-w-3xl mx-auto animation-fade-in pb-12">

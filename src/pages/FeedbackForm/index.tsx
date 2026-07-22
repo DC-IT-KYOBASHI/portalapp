@@ -1,38 +1,29 @@
-import { useState } from 'react'
-import { fetchApi } from '../../utils/api'
+﻿import { useState } from 'react'
+import { useApi } from '../../hooks/useApi'
 
 export default function FeedbackForm() {
   const [type, setType] = useState<'bug' | 'feature'>('bug')
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
 
-  const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle')
-  const [errorMessage, setErrorMessage] = useState('')
+  const { error: apiError, isLoading: isSubmitting, execute } = useApi<{status: string} | null>(null)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setIsSubmitting(true)
     setSubmitStatus('idle')
-    setErrorMessage('')
 
-    try {
-      // 共通API関数を使用して送信
-      await fetchApi('?api=true&module=Feedback', {
-        method: 'POST',
-        body: JSON.stringify({ type, title, description }),
-      })
+    const result = await execute('?api=true&module=Feedback', {
+      method: 'POST',
+      body: JSON.stringify({ type, title, description }),
+    })
 
+    if (result) {
       setSubmitStatus('success')
-      // フォームをリセット
       setTitle('')
       setDescription('')
-    } catch (err: any) {
-      console.error(err)
+    } else {
       setSubmitStatus('error')
-      setErrorMessage(err.message || '送信に失敗しました。')
-    } finally {
-      setIsSubmitting(false)
     }
   }
 
@@ -72,7 +63,7 @@ export default function FeedbackForm() {
           <form onSubmit={handleSubmit} className="flex flex-col gap-6">
             {submitStatus === 'error' && (
               <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-xl text-red-600 dark:text-red-400 font-bold text-sm">
-                ⚠️ {errorMessage}
+                ⚠️ {apiError}
               </div>
             )}
 

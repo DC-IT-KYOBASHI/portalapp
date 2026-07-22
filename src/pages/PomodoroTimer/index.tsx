@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
-import { TimerCard, type TimerData } from './components/TimerCard'
+import { TimerCard } from './components/TimerCard'
+import type { TimerData } from '../../types'
 
 const LOCAL_STORAGE_KEY = 'lolipop_portal_timers'
 const MAX_TIMERS = 4 // タイマーの最大数制限

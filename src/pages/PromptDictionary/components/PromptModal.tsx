@@ -1,4 +1,4 @@
-import type { PromptData } from '../data/prompts'
+import type { PromptData } from '../../../types'
 import { useState } from 'react'
 
 interface PromptModalProps {
