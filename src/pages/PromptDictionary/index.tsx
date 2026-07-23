@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from 'react'
-import { promptCategories, type PromptCategory } from './data/prompts'
+import { promptCategories, type PromptCategory, initialPrompts } from './data/prompts'
 import type { PromptData } from '../../types'
-import { fetchPromptsFromWP } from './data/api'
+import { useApi } from '../../hooks/useApi'
 import PromptModal from './components/PromptModal'
 
 export default function PromptDictionary() {
@@ -9,16 +9,13 @@ export default function PromptDictionary() {
   const [selectedCategory, setSelectedCategory] = useState<PromptCategory | 'すべて'>('すべて')
   const [selectedPrompt, setSelectedPrompt] = useState<PromptData | null>(null)
 
-  const [prompts, setPrompts] = useState<PromptData[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  const { data, error, isLoading, execute } = useApi<PromptData[]>(initialPrompts)
+  const prompts = data || initialPrompts
 
   // 初期ロード時にWP（またはモック）からデータを取得する
   useEffect(() => {
-    fetchPromptsFromWP().then((data) => {
-      setPrompts(data)
-      setIsLoading(false)
-    })
-  }, [])
+    execute('?api=true&module=PromptDictionary')
+  }, [execute])
 
   // 検索とカテゴリによる絞り込み
   const filteredPrompts = useMemo(() => {
@@ -110,6 +107,11 @@ export default function PromptDictionary() {
           <div className="glass-panel rounded-3xl p-12 flex flex-col items-center justify-center opacity-70">
             <div className="animate-spin text-4xl mb-4">⚙️</div>
             <p className="font-bold">WordPressからプロンプトを取得しています...</p>
+          </div>
+        ) : error ? (
+          <div className="glass-panel rounded-3xl p-12 flex flex-col items-center justify-center text-red-500">
+            <span className="text-4xl mb-4">⚠️</span>
+            <p className="font-bold">{error}</p>
           </div>
         ) : filteredPrompts.length === 0 ? (
           <div className="glass-panel rounded-3xl p-12 flex flex-col items-center justify-center opacity-50">
