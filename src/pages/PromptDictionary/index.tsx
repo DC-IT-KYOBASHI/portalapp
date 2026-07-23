@@ -71,9 +71,19 @@ export default function PromptDictionary() {
       <section className="flex-1">
         {/* ヘッダーと検索ボックス */}
         <div className="mb-8">
-          <h2 className="text-3xl font-black tracking-tight flex items-center gap-3 mb-2">
-            🤖 AIプロンプト逆引き辞典
-          </h2>
+          <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 mb-2">
+            <h2 className="text-3xl font-black tracking-tight flex items-center gap-3">
+              🤖 AIプロンプト逆引き辞典
+            </h2>
+            <a 
+              href="https://dcitex-kyobashi-se.joinus-dc-kyobashi.com/?module=PromptDictionary" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-sm bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-500/20 px-3 py-1.5 rounded-lg transition-colors font-bold w-fit border border-blue-500/20"
+            >
+              ✏️ プロンプトの追加・編集ページへ <span className="text-[10px] bg-red-500/10 text-red-500 px-1 rounded ml-1 border border-red-500/20">内部NW専用</span>
+            </a>
+          </div>
           <p className="opacity-70 mb-6">
             やりたい事から、効果的なAIへの指示（プロンプト）を探せます。
           </p>
