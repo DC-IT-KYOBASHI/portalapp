@@ -120,7 +120,7 @@ export default function Header() {
             className="p-3 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 flex items-center gap-3 transition-colors"
           >
             <span className="text-xl">🔒</span>
-            <span className="text-sm font-bold">システム情報部専用</span>
+            <span className="text-sm font-bold">システム情報部専用（内部NW専用）</span>
           </a>
         </div>
       )}

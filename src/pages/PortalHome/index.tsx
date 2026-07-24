@@ -72,7 +72,7 @@ export default function PortalHome() {
             システム情報部 総合ポータル
           </h3>
           <p className="text-sm opacity-70 leading-relaxed">
-            メンバー専用・アプリデータ管理（※要パスワード）
+            メンバー専用・アプリデータ管理（※内部NW専用・要パスワード）
           </p>
         </a>
       </div>
