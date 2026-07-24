@@ -33,7 +33,11 @@
 
 * `src/pages/` ➡ 各画面のプログラムが入っています。
   * `PortalHome/` ➡ トップページ（アプリ一覧画面）
-  * `PomodoroTimer/` ➡ ポモドーロタイマー画面
+  * `PomodoroTimer/` ➡ ポモドーロタイマー
+  * `PromptDictionary/` ➡ AIプロンプト逆引き辞典
+  * `FeedbackForm/` ➡ 不具合・要望フォーム
+  * `Changelog/` ➡ 更新履歴
+* `src/utils/api.ts` ➡ バックエンド(system-admin)と安全に通信するための共通API関数(`fetchApi`)が入っています。
 * `src/App.tsx` ➡ ヘッダー（タイトルや月のマーク）と、画面切り替え（ルーティング）の設定を行うファイルです。
 * `src/index.css` ➡ 全体のデザイン（背景色や文字色）を設定するファイルです。
 
