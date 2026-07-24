@@ -70,12 +70,24 @@ export default function PromptDictionary() {
       <section className="flex-1">
         {/* ヘッダーと検索ボックス */}
         <div className="mb-8">
-          <h2 className="text-3xl font-black tracking-tight flex items-center gap-3 mb-2">
-            🤖 AIプロンプト逆引き辞典
-          </h2>
-          <p className="opacity-70 mb-6">
-            やりたい事から、効果的なAIへの指示（プロンプト）を探せます。
-          </p>
+          <div className="flex flex-col md:flex-row md:justify-between md:items-end gap-4 mb-4">
+            <div>
+              <h2 className="text-3xl font-black tracking-tight flex items-center gap-3 mb-2">
+                🤖 AIプロンプト逆引き辞典
+              </h2>
+              <p className="opacity-70">
+                やりたい事から、効果的なAIへの指示（プロンプト）を探せます。
+              </p>
+            </div>
+            <a
+              href="https://dcitex-kyobashi-se.joinus-dc-kyobashi.com/?module=PromptDictionary"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 text-sm bg-blue-50 hover:bg-blue-100 text-blue-700 px-4 py-2 rounded-xl border border-blue-200 transition-colors font-bold whitespace-nowrap"
+            >
+              ✏️ プロンプトの追加・編集 <span className="text-xs opacity-70">(内部NW専用)</span>
+            </a>
+          </div>
 
           <div className="relative">
             <span className="absolute left-4 top-1/2 -translate-y-1/2 opacity-50">🔍</span>
