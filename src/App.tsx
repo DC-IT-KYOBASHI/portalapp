@@ -4,6 +4,7 @@ import PomodoroTimer from './pages/PomodoroTimer'
 import PromptDictionary from './pages/PromptDictionary'
 import FeedbackForm from './pages/FeedbackForm'
 import Changelog from './pages/Changelog'
+import Weather from './pages/Weather'
 import Header from './components/Header'
 import ScrollToTopButton from './components/ScrollToTopButton'
 
@@ -31,6 +32,7 @@ function App() {
       <main className="flex-1 w-full">
         <Routes>
           <Route path="/" element={<PortalHome />} />
+          <Route path="/weather" element={<Weather />} />
           <Route path="/pomodoro" element={<PomodoroTimer />} />
           <Route path="/prompts" element={<PromptDictionary />} />
           <Route path="/feedback" element={<FeedbackForm />} />

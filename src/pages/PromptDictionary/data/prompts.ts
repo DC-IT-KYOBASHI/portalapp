@@ -1,14 +1,7 @@
+import type { PromptData } from '../../../types';
+
 export type PromptCategory =
   '文章作成' | 'コーディング' | 'アイデア出し' | '学習・調査' | 'デザイン'
-
-export interface PromptData {
-  id: string
-  title: string
-  category: PromptCategory
-  goal: string
-  prompt: string
-  explanation: string
-}
 
 export const promptCategories: PromptCategory[] = [
   '文章作成',

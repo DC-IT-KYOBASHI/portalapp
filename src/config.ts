@@ -1,8 +1,6 @@
-export const API_BASE_URL = import.meta.env.DEV
-  ? 'http://localhost:8000/api'
-  : 'https://dcitex-kyobashi-se.joinus-dc-kyobashi.com/api';
+export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/';
 
 export const APP_CONFIG = {
-  VERSION: 'v1.0.0',
-  PORTAL_NAME: 'DCITエキスパート京橋オフィス アプリ集',
+  VERSION: 'v1.0.1',
+  PORTAL_NAME: import.meta.env.VITE_SITE_TITLE || 'DCITエキスパート京橋オフィス アプリ集',
 };

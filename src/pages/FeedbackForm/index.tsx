@@ -1,44 +1,37 @@
 import { useState } from 'react'
-import { fetchApi } from '../../utils/api'
+import { useApi } from '../../hooks/useApi'
+import BackToHomeButton from '../../components/BackToHomeButton'
 
 export default function FeedbackForm() {
   const [type, setType] = useState<'bug' | 'feature'>('bug')
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
 
-  const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle')
-  const [errorMessage, setErrorMessage] = useState('')
+  const { error: apiError, isLoading: isSubmitting, execute } = useApi<{status: string} | null>(null)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setIsSubmitting(true)
     setSubmitStatus('idle')
-    setErrorMessage('')
 
-    try {
-      // 共通API関数を使用して送信
-      await fetchApi('/feedback.php', {
-        method: 'POST',
-        body: JSON.stringify({ type, title, description }),
-      })
+    const result = await execute('?api=true&module=Feedback', {
+      method: 'POST',
+      body: JSON.stringify({ type, title, description }),
+    })
 
+    if (result) {
       setSubmitStatus('success')
-      // フォームをリセット
       setTitle('')
       setDescription('')
-    } catch (err: any) {
-      console.error(err)
+    } else {
       setSubmitStatus('error')
-      setErrorMessage(err.message || '送信に失敗しました。')
-    } finally {
-      setIsSubmitting(false)
     }
   }
 
   return (
     <div className="w-full animation-fade-in flex flex-col max-w-3xl mx-auto">
       <div className="mb-8">
+        <BackToHomeButton />
         <h2 className="text-2xl font-black tracking-tight flex items-center gap-2">
           📮 不具合報告・ご要望
         </h2>
@@ -72,7 +65,7 @@ export default function FeedbackForm() {
           <form onSubmit={handleSubmit} className="flex flex-col gap-6">
             {submitStatus === 'error' && (
               <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-xl text-red-600 dark:text-red-400 font-bold text-sm">
-                ⚠️ {errorMessage}
+                ⚠️ {apiError}
               </div>
             )}
 

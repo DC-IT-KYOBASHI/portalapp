@@ -1,23 +1,22 @@
 import { useEffect, useState, useMemo } from 'react'
-import { promptCategories, type PromptData, type PromptCategory } from './data/prompts'
-import { fetchPromptsFromWP } from './data/api'
+import { promptCategories, type PromptCategory, initialPrompts } from './data/prompts'
+import type { PromptData } from '../../types'
+import { useApi } from '../../hooks/useApi'
 import PromptModal from './components/PromptModal'
+import BackToHomeButton from '../../components/BackToHomeButton'
 
 export default function PromptDictionary() {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<PromptCategory | 'すべて'>('すべて')
   const [selectedPrompt, setSelectedPrompt] = useState<PromptData | null>(null)
 
-  const [prompts, setPrompts] = useState<PromptData[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  const { data, error, isLoading, execute } = useApi<PromptData[]>(initialPrompts)
+  const prompts = data || initialPrompts
 
   // 初期ロード時にWP（またはモック）からデータを取得する
   useEffect(() => {
-    fetchPromptsFromWP().then((data) => {
-      setPrompts(data)
-      setIsLoading(false)
-    })
-  }, [])
+    execute('?api=true&module=PromptDictionary')
+  }, [execute])
 
   // 検索とカテゴリによる絞り込み
   const filteredPrompts = useMemo(() => {
@@ -37,6 +36,7 @@ export default function PromptDictionary() {
       {/* 左サイドバー: カテゴリナビゲーション */}
       <aside className="w-full md:w-64 flex-shrink-0">
         <div className="glass-panel p-6 rounded-3xl sticky top-6">
+          <BackToHomeButton className="mb-4" />
           <h3 className="font-bold mb-4 opacity-70">📂 カテゴリ</h3>
           <nav className="flex flex-col gap-2">
             <button
@@ -70,24 +70,22 @@ export default function PromptDictionary() {
       <section className="flex-1">
         {/* ヘッダーと検索ボックス */}
         <div className="mb-8">
-          <div className="flex flex-col md:flex-row md:justify-between md:items-end gap-4 mb-4">
-            <div>
-              <h2 className="text-3xl font-black tracking-tight flex items-center gap-3 mb-2">
-                🤖 AIプロンプト逆引き辞典
-              </h2>
-              <p className="opacity-70">
-                やりたい事から、効果的なAIへの指示（プロンプト）を探せます。
-              </p>
-            </div>
-            <a
-              href="https://dcitex-kyobashi-se.joinus-dc-kyobashi.com/?module=PromptDictionary"
-              target="_blank"
+          <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 mb-2">
+            <h2 className="text-3xl font-black tracking-tight flex items-center gap-3">
+              🤖 AIプロンプト逆引き辞典
+            </h2>
+            <a 
+              href="https://dcitex-kyobashi-se.joinus-dc-kyobashi.com/?module=PromptDictionary" 
+              target="_blank" 
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 text-sm bg-blue-50 hover:bg-blue-100 text-blue-700 px-4 py-2 rounded-xl border border-blue-200 transition-colors font-bold whitespace-nowrap"
+              className="inline-flex items-center gap-1 text-sm bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-500/20 px-3 py-1.5 rounded-lg transition-colors font-bold w-fit border border-blue-500/20"
             >
-              ✏️ プロンプトの追加・編集 <span className="text-xs opacity-70">(内部NW専用)</span>
+              ✏️ プロンプトの追加・編集ページへ <span className="text-[10px] bg-red-500/10 text-red-500 px-1 rounded ml-1 border border-red-500/20">内部NW専用</span>
             </a>
           </div>
+          <p className="opacity-70 mb-6">
+            やりたい事から、効果的なAIへの指示（プロンプト）を探せます。
+          </p>
 
           <div className="relative">
             <span className="absolute left-4 top-1/2 -translate-y-1/2 opacity-50">🔍</span>
@@ -111,6 +109,11 @@ export default function PromptDictionary() {
           <div className="glass-panel rounded-3xl p-12 flex flex-col items-center justify-center opacity-70">
             <div className="animate-spin text-4xl mb-4">⚙️</div>
             <p className="font-bold">WordPressからプロンプトを取得しています...</p>
+          </div>
+        ) : error ? (
+          <div className="glass-panel rounded-3xl p-12 flex flex-col items-center justify-center text-red-500">
+            <span className="text-4xl mb-4">⚠️</span>
+            <p className="font-bold">{error}</p>
           </div>
         ) : filteredPrompts.length === 0 ? (
           <div className="glass-panel rounded-3xl p-12 flex flex-col items-center justify-center opacity-50">

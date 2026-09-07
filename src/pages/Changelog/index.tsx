@@ -1,31 +1,22 @@
-import { useEffect, useState } from 'react'
-import { fetchApi } from '../../utils/api'
+import { useEffect } from 'react'
+import { useApi } from '../../hooks/useApi'
 import type { Changelog as ChangelogType } from '../../types'
+import BackToHomeButton from '../../components/BackToHomeButton'
 
 export default function Changelog() {
-  const [changelogs, setChangelogs] = useState<ChangelogType[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const { data, error, isLoading, execute } = useApi<ChangelogType[]>([])
+  const changelogs = data || []
 
   useEffect(() => {
-    // APIから更新履歴を取得（共通のfetchApiを使用）
-    const getChangelogs = async () => {
-      try {
-        const data = await fetchApi<ChangelogType[]>('/changelog.php')
-        setChangelogs(data)
-      } catch (err: any) {
-        setError(err.message || 'データの取得に失敗しました')
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    getChangelogs()
-  }, [])
+    execute('?api=true&module=Changelog')
+  }, [execute])
 
   return (
     <div className="max-w-3xl mx-auto animation-fade-in pb-12">
       <div className="text-center mb-10">
+        <div className="flex justify-start">
+          <BackToHomeButton />
+        </div>
         <h1 className="text-3xl font-bold mb-4 flex items-center justify-center gap-3">
           <span className="text-4xl">📝</span>
           更新履歴

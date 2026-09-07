@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
+import { APP_CONFIG } from '../config'
 
 /**
  * 【共通コンポーネント】 アプリ全画面共通ヘッダー
@@ -32,6 +33,7 @@ export default function Header() {
   // アプリが増えたら、ここに要素を追加するだけで自動的にメニューが拡張されます
   const menuItems = [
     { name: 'ホーム', path: '/', icon: '🏠' },
+    { name: 'お天気・防災', path: '/weather', icon: '⛅' },
     { name: 'ポモドーロ', path: '/pomodoro', icon: '🍅' },
     { name: 'プロンプト辞典', path: '/prompts', icon: '📖' },
     { name: '不具合報告・要望', path: '/feedback', icon: '📮' },
@@ -58,12 +60,12 @@ export default function Header() {
           >
             <span className="text-3xl">✨</span>
             <span className="hidden sm:inline">
-              {import.meta.env.VITE_SITE_TITLE || 'DCITエキスパート京橋オフィス アプリ集'}
+              {APP_CONFIG.PORTAL_NAME}
             </span>
             <span className="sm:hidden">DCITアプリ集</span>
           </Link>
           <span className="bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-300 text-xs font-bold px-2 py-1 rounded-full border border-teal-200 dark:border-teal-800">
-            v1.0.0
+            {APP_CONFIG.VERSION}
           </span>
         </div>
 
@@ -116,11 +118,16 @@ export default function Header() {
           
           {/* 裏側の管理画面へのリンク */}
           <a 
-            href="https://dcitex-kyobashi-se.joinus-dc-kyobashi.com/members/" 
-            className="p-3 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 flex items-center gap-3 transition-colors"
+            href="https://dcitex-kyobashi-se.joinus-dc-kyobashi.com/" 
+            className="p-3 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 flex items-center justify-between transition-colors group"
           >
-            <span className="text-xl">🔒</span>
-            <span className="text-sm font-bold">システム情報部専用（内部NW専用）</span>
+            <div className="flex items-center gap-3">
+              <span className="text-xl group-hover:scale-110 transition-transform">🔒</span>
+              <span className="text-sm font-bold">システム情報部 総合ポータル</span>
+            </div>
+            <span className="text-[10px] bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400 px-2 py-0.5 rounded font-bold">
+              内部NW専用
+            </span>
           </a>
         </div>
       )}
