@@ -38,9 +38,8 @@ export default function WeatherWidget() {
 
   if (!data) return null
 
-  // 警報・注意報の簡易テキスト
+  // 警報・注意報の件数
   const warningCount = data.warnings.length
-  const hasAlert = data.warnings.some((w) => w.type === 'warning' || w.type === 'special')
 
   return (
     <Link
@@ -86,19 +85,26 @@ export default function WeatherWidget() {
       {/* 右側：警報ステータス ＆ 詳細リンク */}
       <div className="flex items-center gap-2 self-end sm:self-auto">
         {warningCount > 0 ? (
-          <span
-            className={`text-xs px-2.5 py-1 rounded-lg font-bold flex items-center gap-1 ${
-              hasAlert
-                ? 'bg-red-500/20 text-red-600 dark:text-red-300 border border-red-500/30 animate-pulse'
-                : 'bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-500/30'
-            }`}
-          >
-            <span>⚠️</span>
-            <span>{hasAlert ? '警報発令中' : `${data.warnings[0].name}${warningCount > 1 ? ` 他${warningCount - 1}件` : ''}`}</span>
-          </span>
+          <div className="flex flex-wrap items-center gap-1.5">
+            {data.warnings.map((w, idx) => (
+              <span
+                key={idx}
+                className={`text-xs px-2.5 py-1 rounded-lg font-bold flex items-center gap-1 shadow-sm ${
+                  w.type === 'special'
+                    ? 'bg-purple-600 text-white animate-pulse'
+                    : w.type === 'warning'
+                    ? 'bg-red-500 text-white animate-pulse'
+                    : 'bg-amber-500/20 text-amber-900 dark:text-amber-200 border border-amber-500/30'
+                }`}
+              >
+                <span>⚠️</span>
+                <span>{w.name}</span>
+              </span>
+            ))}
+          </div>
         ) : (
           <span className="text-[11px] text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full font-bold">
-            🟢 警報なし
+            🟢 警報・注意報なし
           </span>
         )}
 

@@ -18,7 +18,7 @@ export const JMA_CONFIG = {
     AMEDAS_OSAKA: '62078', // アメダス大阪観測所（大阪市中央区大手前）
   },
   CACHE: {
-    KEY: 'jma_weather_osaka_cache_v4',
+    KEY: 'jma_weather_osaka_cache_v5',
     TTL_MS: 30 * 60 * 1000, // 30分キャッシュ
   },
   PRESSURE_THRESHOLDS: {
