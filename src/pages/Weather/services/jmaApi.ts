@@ -385,36 +385,67 @@ function parseWeeklyForecast(weeklyData: any): WeeklyForecastItem[] {
 
 /**
  * r8 警報・注意報データのパース処理
+ * 
+ * 気象庁のr8データは発表ごとのイベント差分履歴配列（[最新, 過去1, 過去2, ...]）で格納されているため、
+ * 全履歴を走査して警報・注意報コードごとに最新ステータスを判定し、
+ * 「解除」されていない有効な全注意報（大雨、雷など）を累積して抽出します。
  */
 function parseWarningData(warningJson: any): { warnings: WeatherWarningItem[]; headlineText: string } {
   const warningList: WeatherWarningItem[] = []
   let warningHeadline = ''
 
   if (warningJson && Array.isArray(warningJson) && warningJson.length > 0) {
-    const latestDoc = warningJson[0]
-    warningHeadline = latestDoc.headlineText || ''
+    // 最新の見出し文
+    warningHeadline = warningJson[0].headlineText || ''
 
-    const warningData = latestDoc.warning
-    if (warningData && warningData.class20Items) {
-      const osakaCityItem = warningData.class20Items.find(
-        (item: any) => item.areaCode === JMA_CONFIG.AREA.OSAKA_CITY
-      )
+    // 各警報・注意報コードごとの最新ステータスを保持するマップ
+    const warningStatusMap = new Map<string, { code: string; status: string; reportDatetime: string }>()
 
-      if (osakaCityItem && osakaCityItem.kinds) {
-        osakaCityItem.kinds.forEach((k: any) => {
-          if (k.code && (k.status === '発表' || k.status === '継続' || k.status === '警報から注意報')) {
-            const info = parseWarningCode(k.code)
-            warningList.push({
-              code: k.code,
-              name: info.name,
-              type: info.type,
-              status: k.status,
-            })
-          }
+    // 最新（index 0）から過去へ走査
+    for (let i = 0; i < warningJson.length; i++) {
+      const doc = warningJson[i]
+      const warningData = doc.warning
+
+      if (warningData && warningData.class20Items) {
+        const osakaCityItem = warningData.class20Items.find(
+          (item: any) => item.areaCode === JMA_CONFIG.AREA.OSAKA_CITY
+        )
+
+        if (osakaCityItem && osakaCityItem.kinds) {
+          osakaCityItem.kinds.forEach((k: any) => {
+            // まだ未記録のコード（＝最新のステータス）のみを記録
+            if (k.code && !warningStatusMap.has(k.code)) {
+              warningStatusMap.set(k.code, {
+                code: k.code,
+                status: k.status,
+                reportDatetime: doc.reportDatetime || '',
+              })
+            }
+          })
+        }
+      }
+    }
+
+    // 「発表」「継続」「警報から注意報」の有効な警報・注意報のみを一覧化
+    for (const [, info] of warningStatusMap.entries()) {
+      if (info.status === '発表' || info.status === '継続' || info.status === '警報から注意報') {
+        const parsed = parseWarningCode(info.code)
+        warningList.push({
+          code: info.code,
+          name: parsed.name,
+          type: parsed.type,
+          status: info.status,
         })
       }
     }
   }
+
+  // 警報・注意報を重要度順（特別警報 → 警報 → 注意報）にソート
+  warningList.sort((a, b) => {
+    const priority = { special: 0, warning: 1, advisory: 2 }
+    return priority[a.type] - priority[b.type]
+  })
+
   return { warnings: warningList, headlineText: warningHeadline }
 }
 

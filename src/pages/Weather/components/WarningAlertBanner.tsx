@@ -98,6 +98,20 @@ export default function WarningAlertBanner({ warnings, headlineText }: Props) {
           )}
         </div>
       )}
+
+      {/* 気象庁公式ページへの直接リンク */}
+      <div className="mt-4 pt-3 border-t border-black/5 dark:border-white/10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+        <span className="text-[11px] opacity-60">※ 気象庁が発表するリアルタイムの防災気象情報です。</span>
+        <a
+          href="https://www.jma.go.jp/bosai/#pattern=forecast&area_type=class20s&area_code=2710000"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline bg-blue-500/10 px-3 py-1 rounded-xl border border-blue-500/20 transition-all hover:bg-blue-500/20"
+        >
+          <span>🌐 気象庁公式「大阪市の防災情報」を開く</span>
+          <span className="text-[10px]">↗</span>
+        </a>
+      </div>
     </div>
   )
 }

@@ -134,9 +134,14 @@ export default function CurrentWeatherCard({ current, today, cityName }: Props) 
 
       {/* 気圧健康アドバイス */}
       {current?.pressureStatus && current.pressureStatus !== 'normal' && (
-        <div className="mt-4 p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl text-xs text-amber-800 dark:text-amber-300 flex items-center gap-2">
-          <span>💡</span>
-          <span><strong>体調メモ:</strong> {pressureInfo.desc} こまめな水分補給や適度な休憩を心がけましょう。</span>
+        <div className="mt-4 p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl text-xs text-amber-800 dark:text-amber-300 space-y-1">
+          <div className="flex items-center gap-2">
+            <span>💡</span>
+            <span><strong>気圧と体調メモ:</strong> {pressureInfo.desc} こまめな水分補給や適度な休憩を心がけましょう。</span>
+          </div>
+          <p className="text-[10px] opacity-70 pl-6">
+            ※ アメダス（大阪観測所）で観測されたリアルタイムの海面気圧値（標準 1013.25hPa）を元に、気象病（頭痛・倦怠感等）の予防目安として自動判定しています。
+          </p>
         </div>
       )}
     </div>
