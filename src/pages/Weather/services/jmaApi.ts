@@ -7,7 +7,7 @@ import type {
   PopTimeSlot,
 } from '../types'
 
-const CACHE_KEY = 'jma_weather_osaka_cache_v2'
+const CACHE_KEY = 'jma_weather_osaka_cache_v3'
 const CACHE_TTL_MS = 30 * 60 * 1000 // 30分
 
 // 気象庁 エリアコード
@@ -54,7 +54,7 @@ export function getWeatherEmoji(code: string): { emoji: string; shortText: strin
 function parseWarningCode(code: string): { name: string; type: 'special' | 'warning' | 'advisory' } {
   const codeNum = parseInt(code, 10)
   
-  // 特別警報 (20番台後半〜30番台など)
+  // 特別警報 (30番台)
   if (codeNum >= 30) {
     const specialNames: Record<string, string> = {
       '32': '大雪特別警報',
@@ -66,7 +66,7 @@ function parseWarningCode(code: string): { name: string; type: 'special' | 'warn
     return { name: specialNames[code] || '特別警報', type: 'special' }
   }
 
-  // 警報
+  // 警報 (02〜08)
   const warningNames: Record<string, string> = {
     '02': '暴風雪警報',
     '03': '大雨警報',
@@ -80,7 +80,7 @@ function parseWarningCode(code: string): { name: string; type: 'special' | 'warn
     return { name: warningNames[code], type: 'warning' }
   }
 
-  // 注意報
+  // 注意報 (10〜26)
   const advisoryNames: Record<string, string> = {
     '10': '大雨注意報',
     '12': '大雪注意報',
@@ -148,7 +148,7 @@ function formatPopTimeRange(isoStr: string): string {
 }
 
 /**
- * 気象庁 API より天気予報・警報・アメダスを取得
+ * 気象庁 API より天気予報・最新警報(r8)・アメダス・概況を取得
  */
 export async function fetchWeatherDataFromJMA(forceRefresh = false): Promise<WeatherFullData> {
   // 1. キャッシュチェック
@@ -162,20 +162,22 @@ export async function fetchWeatherDataFromJMA(forceRefresh = false): Promise<Wea
           return cachedData
         }
       }
-    } catch (e) {
-      console.warn('Weather cache read error:', e)
+    } catch {
+      // ignore
     }
   }
 
-  // 2. 気象庁APIへのリクエスト（並列取得）
+  // 2. 気象庁APIへのリクエスト（最新 r8 警報エンドポイント含む）
   const forecastUrl = `https://www.jma.go.jp/bosai/forecast/data/forecast/${AREA_OSAKA_PREF}.json`
-  const warningUrl = `https://www.jma.go.jp/bosai/warning/data/warning/${AREA_OSAKA_PREF}.json`
+  const warningUrl = `https://www.jma.go.jp/bosai/warning/data/r8/${AREA_OSAKA_PREF}.json`
+  const overviewUrl = `https://www.jma.go.jp/bosai/forecast/data/overview_forecast/${AREA_OSAKA_PREF}.json`
   const latestTimeUrl = `https://www.jma.go.jp/bosai/amedas/data/latest_time.txt`
 
   try {
-    const [forecastRes, warningRes, latestTimeRes] = await Promise.all([
+    const [forecastRes, warningRes, overviewRes, latestTimeRes] = await Promise.all([
       fetch(forecastUrl),
-      fetch(warningUrl),
+      fetch(warningUrl).catch(() => null),
+      fetch(overviewUrl).catch(() => null),
       fetch(latestTimeUrl).catch(() => null),
     ])
 
@@ -184,7 +186,8 @@ export async function fetchWeatherDataFromJMA(forceRefresh = false): Promise<Wea
     }
 
     const forecastJson = await forecastRes.json()
-    const warningJson = warningRes.ok ? await warningRes.json() : null
+    const warningJson = warningRes && warningRes.ok ? await warningRes.json() : null
+    const overviewJson = overviewRes && overviewRes.ok ? await overviewRes.json() : null
 
     // 3. アメダス最新実況データの取得
     let currentObs: CurrentObservation | null = null
@@ -207,7 +210,6 @@ export async function fetchWeatherDataFromJMA(forceRefresh = false): Promise<Wea
           if (osakaAmedas) {
             const temp = osakaAmedas.temp ? osakaAmedas.temp[0] : null
             const humidity = osakaAmedas.humidity ? osakaAmedas.humidity[0] : null
-            // normalPressure (海面気圧) または pressure (現地気圧)
             const pressure = osakaAmedas.normalPressure
               ? osakaAmedas.normalPressure[0]
               : osakaAmedas.pressure
@@ -390,34 +392,34 @@ export async function fetchWeatherDataFromJMA(forceRefresh = false): Promise<Wea
       }
     }
 
-    // 6. 警報・注意報のパース（大阪市対象 AREA_OSAKA_CITY: 2710000）
+    // 6. 警報・注意報のパース（最新 r8 形式：大阪市 AREA_OSAKA_CITY: 2710000）
     const warningList: WeatherWarningItem[] = []
-    if (warningJson && warningJson.areaTypes) {
-      // 全 areaTypes から大阪市（2710000）を探索
-      let osakaCityArea: any = null
-      for (const at of warningJson.areaTypes) {
-        if (at.areas) {
-          const target = at.areas.find((a: any) => a.code === AREA_OSAKA_CITY || a.code === '2712800' || a.name === '大阪市')
-          if (target) {
-            osakaCityArea = target
-            break
-          }
-        }
-      }
+    let warningHeadline = ''
 
-      if (osakaCityArea && osakaCityArea.warnings) {
-        osakaCityArea.warnings.forEach((w: any) => {
-          // status が "発表" または "継続" または "警報から注意報" のみ（"解除" は除外）
-          if (w.status === '発表' || w.status === '継続' || w.status === '警報から注意報') {
-            const info = parseWarningCode(w.code)
-            warningList.push({
-              code: w.code,
-              name: info.name,
-              type: info.type,
-              status: w.status,
-            })
-          }
-        })
+    if (warningJson && Array.isArray(warningJson) && warningJson.length > 0) {
+      const latestWarningDoc = warningJson[0]
+      warningHeadline = latestWarningDoc.headlineText || ''
+
+      const warningData = latestWarningDoc.warning
+      if (warningData && warningData.class20Items) {
+        // 大阪市（2710000）の市町村アイテムを抽出
+        const osakaCityItem = warningData.class20Items.find(
+          (item: any) => item.areaCode === AREA_OSAKA_CITY
+        )
+
+        if (osakaCityItem && osakaCityItem.kinds) {
+          osakaCityItem.kinds.forEach((k: any) => {
+            if (k.code && (k.status === '発表' || k.status === '継続' || k.status === '警報から注意報')) {
+              const info = parseWarningCode(k.code)
+              warningList.push({
+                code: k.code,
+                name: info.name,
+                type: info.type,
+                status: k.status,
+              })
+            }
+          })
+        }
       }
     }
 
@@ -430,14 +432,16 @@ export async function fetchWeatherDataFromJMA(forceRefresh = false): Promise<Wea
       tomorrow: tomorrowForecast,
       weekly: weeklyForecasts,
       warnings: warningList,
+      warningHeadlineText: warningHeadline,
+      overviewText: overviewJson?.text || '',
       hasWarnings: warningList.length > 0,
     }
 
     // キャッシュ保存
     try {
       localStorage.setItem(CACHE_KEY, JSON.stringify(fullResult))
-    } catch (e) {
-      console.warn('Failed to save weather cache:', e)
+    } catch {
+      // ignore
     }
 
     return fullResult

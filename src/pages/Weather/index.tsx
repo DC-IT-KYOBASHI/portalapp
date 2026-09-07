@@ -106,7 +106,10 @@ export default function Weather() {
           />
 
           {/* 2. 警報・注意報バナー */}
-          <WarningAlertBanner warnings={data.warnings} />
+          <WarningAlertBanner
+            warnings={data.warnings}
+            headlineText={data.warningHeadlineText}
+          />
 
           {/* 3. 今日・明日の降水確率 ＆ 週間天気予報 */}
           <WeeklyForecastTable
@@ -114,6 +117,19 @@ export default function Weather() {
             tomorrow={data.tomorrow}
             weekly={data.weekly}
           />
+
+          {/* 4. 大阪府 気象概況（気象台発表） */}
+          {data.overviewText && (
+            <div className="glass-panel p-5 rounded-3xl border border-white/40 dark:border-white/10 shadow-md">
+              <h3 className="font-bold text-base mb-3 flex items-center gap-2">
+                <span>📜</span>
+                <span>大阪府 気象概況（大阪管区気象台 発表）</span>
+              </h3>
+              <p className="text-xs leading-relaxed opacity-85 whitespace-pre-line bg-black/5 dark:bg-white/5 p-4 rounded-2xl">
+                {data.overviewText}
+              </p>
+            </div>
+          )}
 
           {/* 出典クレジット */}
           <div className="text-center pt-4 text-xs opacity-50 space-y-1">

@@ -2,9 +2,10 @@ import type { WeatherWarningItem } from '../types'
 
 interface Props {
   warnings: WeatherWarningItem[]
+  headlineText?: string
 }
 
-export default function WarningAlertBanner({ warnings }: Props) {
+export default function WarningAlertBanner({ warnings, headlineText }: Props) {
   const specials = warnings.filter((w) => w.type === 'special')
   const alerts = warnings.filter((w) => w.type === 'warning')
   const advisories = warnings.filter((w) => w.type === 'advisory')
@@ -20,6 +21,13 @@ export default function WarningAlertBanner({ warnings }: Props) {
         </div>
         <span className="text-xs opacity-60">気象庁 発表</span>
       </div>
+
+      {/* 気象庁の見出し文があれば表示 */}
+      {headlineText && (
+        <p className="text-xs font-bold text-slate-700 dark:text-slate-300 mb-3 bg-black/5 dark:bg-white/5 p-2.5 rounded-xl border border-black/5 dark:border-white/10">
+          📢 {headlineText}
+        </p>
+      )}
 
       {!hasAnyWarning ? (
         <div className="flex items-center gap-3 p-3.5 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl text-emerald-700 dark:text-emerald-300">

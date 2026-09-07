@@ -63,5 +63,7 @@ export interface WeatherFullData {
   tomorrow: DailyForecast | null
   weekly: WeeklyForecastItem[]
   warnings: WeatherWarningItem[]
+  warningHeadlineText?: string // 警報・注意報見出し文（例: 低い土地の浸水に注意）
+  overviewText?: string // 気象概況テキスト
   hasWarnings: boolean
 }
