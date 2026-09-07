@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
+import { APP_CONFIG } from '../config'
 
 /**
  * 【共通コンポーネント】 アプリ全画面共通ヘッダー
@@ -59,12 +60,12 @@ export default function Header() {
           >
             <span className="text-3xl">✨</span>
             <span className="hidden sm:inline">
-              {import.meta.env.VITE_SITE_TITLE || 'DCITエキスパート京橋オフィス アプリ集'}
+              {APP_CONFIG.PORTAL_NAME}
             </span>
             <span className="sm:hidden">DCITアプリ集</span>
           </Link>
           <span className="bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-300 text-xs font-bold px-2 py-1 rounded-full border border-teal-200 dark:border-teal-800">
-            v0.9.1
+            {APP_CONFIG.VERSION}
           </span>
         </div>
 
