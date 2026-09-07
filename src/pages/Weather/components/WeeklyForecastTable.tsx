@@ -43,11 +43,34 @@ export default function WeeklyForecastTable({ today, tomorrow, weekly }: Props) 
           {/* 明日 */}
           {tomorrow && (
             <div className="bg-black/5 dark:bg-white/5 p-4 rounded-2xl">
-              <div className="flex justify-between items-center mb-2">
+              <div className="flex justify-between items-center mb-1">
                 <span className="text-sm font-bold">明日 ({tomorrow.date})</span>
                 <span className="text-lg">{tomorrow.weatherEmoji} {tomorrow.weatherText}</span>
               </div>
-              <div className="mt-3 pt-3 border-t border-black/5 dark:border-white/10 text-xs opacity-80 leading-relaxed">
+              
+              {/* 気温表示 */}
+              {(tomorrow.tempMax || tomorrow.tempMin) && (
+                <div className="text-xs font-bold mb-2">
+                  {tomorrow.tempMax && <span className="text-red-500 mr-2">予想最高 {tomorrow.tempMax}℃</span>}
+                  {tomorrow.tempMin && <span className="text-blue-500">予想最低 {tomorrow.tempMin}℃</span>}
+                </div>
+              )}
+
+              {/* 明日の時間帯別降水確率 */}
+              {tomorrow.pops.length > 0 && (
+                <div className="grid grid-cols-4 gap-2 text-center my-2 pt-2 border-t border-black/5 dark:border-white/10">
+                  {tomorrow.pops.map((slot, idx) => (
+                    <div key={idx} className="bg-white/60 dark:bg-black/20 p-1.5 rounded-xl">
+                      <div className="text-[10px] opacity-60 font-semibold">{slot.timeLabel}</div>
+                      <div className="text-xs font-extrabold text-blue-600 dark:text-blue-400 mt-0.5">
+                        {slot.pop}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="mt-2 pt-2 border-t border-black/5 dark:border-white/10 text-xs opacity-75 space-y-0.5">
                 {tomorrow.wind && <div>🌬️ 風: {tomorrow.wind}</div>}
                 {tomorrow.wave && <div>🌊 波: {tomorrow.wave}</div>}
               </div>

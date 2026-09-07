@@ -7,11 +7,12 @@ import type {
   PopTimeSlot,
 } from '../types'
 
-const CACHE_KEY = 'jma_weather_osaka_cache_v1'
+const CACHE_KEY = 'jma_weather_osaka_cache_v2'
 const CACHE_TTL_MS = 30 * 60 * 1000 // 30分
 
 // 気象庁 エリアコード
 const AREA_OSAKA_PREF = '270000' // 大阪府
+const AREA_OSAKA_CITY = '2710000' // 大阪市
 const AMEDAS_OSAKA_STATION = '62078' // アメダス観測所：大阪（大阪市中央区大手前）
 
 /**
@@ -29,13 +30,14 @@ export function getWeatherEmoji(code: string): { emoji: string; shortText: strin
   // 曇り系 (200番台)
   if (first === '2') {
     if (c.includes('1')) return { emoji: '🌤️', shortText: '曇りのち晴れ' }
-    if (c.includes('3')) return { emoji: '🌧️', shortText: '曇りのち雨' }
+    if (c.includes('3') || c.includes('4')) return { emoji: '🌧️', shortText: 'くもり時々雨' }
     return { emoji: '☁️', shortText: 'くもり' }
   }
   // 雨系 (300番台)
   if (first === '3') {
     if (c.includes('4') || c.includes('雷')) return { emoji: '⛈️', shortText: '雷雨' }
     if (c.includes('1')) return { emoji: '🌦️', shortText: '雨のち晴れ' }
+    if (c.includes('2')) return { emoji: '🌧️', shortText: '雨時々くもり' }
     return { emoji: '🌧️', shortText: '雨' }
   }
   // 雪系 (400番台)
@@ -114,6 +116,7 @@ function getWindDirectionText(dirIndex: number | undefined): string {
 
 /**
  * 気圧値からステータス判定（気象病・体調管理目安）
+ * ※海面気圧基準 (標準 1013.25 hPa)
  */
 function getPressureStatus(hPa: number | null): 'high' | 'normal' | 'low' | 'very_low' {
   if (hPa === null) return 'normal'
@@ -130,6 +133,18 @@ function getDayOfWeek(dateStr: string): string {
   const d = new Date(dateStr)
   const days = ['日', '月', '火', '水', '木', '金', '土']
   return days[d.getDay()] || ''
+}
+
+/**
+ * 降水確率の開始時刻から「12-18時」等のラベルを生成
+ */
+function formatPopTimeRange(isoStr: string): string {
+  const d = new Date(isoStr)
+  const startH = d.getHours()
+  const endH = (startH + 6) % 24
+  const startStr = String(startH).padStart(2, '0')
+  const endStr = String(endH === 0 ? 24 : endH).padStart(2, '0')
+  return `${startStr}-${endStr}時`
 }
 
 /**
@@ -176,7 +191,6 @@ export async function fetchWeatherDataFromJMA(forceRefresh = false): Promise<Wea
     if (latestTimeRes && latestTimeRes.ok) {
       try {
         const latestTimeRaw = (await latestTimeRes.text()).trim()
-        // Format: 2026-09-07T10:30:00+09:00 -> 20260907103000
         const timestampIso = new Date(latestTimeRaw)
         const y = timestampIso.getFullYear()
         const m = String(timestampIso.getMonth() + 1).padStart(2, '0')
@@ -218,7 +232,7 @@ export async function fetchWeatherDataFromJMA(forceRefresh = false): Promise<Wea
       }
     }
 
-    // 4. 予報データ（今日・明日）のパース
+    // 4. 予報データ（今日・明日）の正確なパース
     const shortForecast = forecastJson[0]
     const reportDatetime = shortForecast.reportDatetime || new Date().toISOString()
     
@@ -232,32 +246,71 @@ export async function fetchWeatherDataFromJMA(forceRefresh = false): Promise<Wea
     const todayWave = osakaAreaWeather.waves?.[0] || ''
     const todayEmoji = getWeatherEmoji(todayCode).emoji
 
-    // timeSeries[1]: 降水確率
+    // timeSeries[1]: 降水確率 (POP)
     const popSeries = shortForecast.timeSeries[1]
     const osakaAreaPop = popSeries ? popSeries.areas.find((a: any) => a.area.code === AREA_OSAKA_PREF || a.area.name.includes('大阪')) || popSeries.areas[0] : null
-    const popTimeDef = popSeries?.timeDefines || []
+    const popTimeDefines: string[] = popSeries?.timeDefines || []
     
     const todayPops: PopTimeSlot[] = []
+    const tomorrowPops: PopTimeSlot[] = []
+
     if (osakaAreaPop && osakaAreaPop.pops) {
-      osakaAreaPop.pops.slice(0, 4).forEach((p: string, idx: number) => {
-        const tDef = popTimeDef[idx] ? new Date(popTimeDef[idx]) : null
-        const label = tDef ? `${String(tDef.getHours()).padStart(2, '0')}時` : `${idx * 6}-${(idx + 1) * 6}時`
-        todayPops.push({ timeLabel: label, pop: `${p}%` })
+      const now = new Date()
+      const todayDateStr = now.toISOString().slice(0, 10)
+
+      osakaAreaPop.pops.forEach((p: string, idx: number) => {
+        const timeIso = popTimeDefines[idx]
+        if (!timeIso) return
+        const label = formatPopTimeRange(timeIso)
+        const itemDateStr = new Date(timeIso).toISOString().slice(0, 10)
+
+        if (itemDateStr === todayDateStr) {
+          todayPops.push({ timeLabel: label, pop: `${p}%` })
+        } else {
+          tomorrowPops.push({ timeLabel: label, pop: `${p}%` })
+        }
       })
     }
 
-    // timeSeries[2]: 気温
+    // timeSeries[2]: 気温 (発表時間ごとの構造差に対応)
     const tempSeries = shortForecast.timeSeries[2]
-    const osakaAreaTemp = tempSeries ? tempSeries.areas.find((a: any) => a.area.code === AREA_OSAKA_PREF || a.area.name.includes('大阪')) || tempSeries.areas[0] : null
-    let tempMin: string | null = null
-    let tempMax: string | null = null
-    if (osakaAreaTemp && osakaAreaTemp.temps) {
-      if (osakaAreaTemp.temps.length >= 2) {
-        tempMin = osakaAreaTemp.temps[0]
-        tempMax = osakaAreaTemp.temps[1]
-      } else if (osakaAreaTemp.temps.length === 1) {
-        tempMax = osakaAreaTemp.temps[0]
-      }
+    const osakaAreaTemp = tempSeries ? tempSeries.areas.find((a: any) => a.area.code === AREA_OSAKA_PREF || a.area.name.includes('大阪') || a.area.code === AMEDAS_OSAKA_STATION) || tempSeries.areas[0] : null
+    const tempTimeDefines: string[] = tempSeries?.timeDefines || []
+    
+    let todayTempMax: string | null = null
+    let todayTempMin: string | null = null
+    let tomorrowTempMin: string | null = null
+    let tomorrowTempMax: string | null = null
+
+    if (osakaAreaTemp && osakaAreaTemp.temps && tempTimeDefines.length > 0) {
+      const temps: string[] = osakaAreaTemp.temps
+      const nowDateStr = new Date().toISOString().slice(0, 10)
+
+      tempTimeDefines.forEach((tDef, idx) => {
+        const tempVal = temps[idx]
+        if (!tempVal) return
+        const tDate = new Date(tDef)
+        const tDateStr = tDate.toISOString().slice(0, 10)
+        const tHours = tDate.getHours()
+
+        if (tDateStr === nowDateStr) {
+          // 今日
+          if (tHours === 0 || tHours === 9) {
+            todayTempMax = tempVal
+          } else if (tHours === 6) {
+            todayTempMin = tempVal
+          } else {
+            todayTempMax = tempVal
+          }
+        } else {
+          // 明日以降
+          if (tHours === 0 || tHours === 6) {
+            if (!tomorrowTempMin) tomorrowTempMin = tempVal
+          } else if (tHours === 9 || tHours === 12) {
+            if (!tomorrowTempMax) tomorrowTempMax = tempVal
+          }
+        }
+      })
     }
 
     const todayForecast: DailyForecast = {
@@ -267,8 +320,8 @@ export async function fetchWeatherDataFromJMA(forceRefresh = false): Promise<Wea
       weatherEmoji: todayEmoji,
       wind: todayWind,
       wave: todayWave,
-      tempMin: tempMin,
-      tempMax: tempMax,
+      tempMin: todayTempMin,
+      tempMax: todayTempMax,
       pops: todayPops,
     }
 
@@ -291,9 +344,9 @@ export async function fetchWeatherDataFromJMA(forceRefresh = false): Promise<Wea
         weatherEmoji: tomorrowEmoji,
         wind: tomorrowWind,
         wave: tomorrowWave,
-        tempMin: null,
-        tempMax: null,
-        pops: [],
+        tempMin: tomorrowTempMin,
+        tempMax: tomorrowTempMax,
+        pops: tomorrowPops,
       }
     }
 
@@ -337,30 +390,34 @@ export async function fetchWeatherDataFromJMA(forceRefresh = false): Promise<Wea
       }
     }
 
-    // 6. 警報・注意報のパース（大阪市対象）
+    // 6. 警報・注意報のパース（大阪市対象 AREA_OSAKA_CITY: 2710000）
     const warningList: WeatherWarningItem[] = []
     if (warningJson && warningJson.areaTypes) {
-      // 市町村別 areaTypes (通常 index 1)
-      const cityAreaType = warningJson.areaTypes.find((at: any) => at.areaType === 'class20s') || warningJson.areaTypes[1]
-      if (cityAreaType && cityAreaType.areas) {
-        // 大阪市（エリアコード 2710000 または 2712800 等）
-        const osakaCityArea = cityAreaType.areas.find(
-          (a: any) => a.code === '2710000' || a.name === '大阪市' || a.name?.includes('大阪市')
-        )
-        if (osakaCityArea && osakaCityArea.warnings) {
-          osakaCityArea.warnings.forEach((w: any) => {
-            // status が "発表" または "継続" のもの
-            if (w.status === '発表' || w.status === '継続' || w.status === '警報から注意報') {
-              const info = parseWarningCode(w.code)
-              warningList.push({
-                code: w.code,
-                name: info.name,
-                type: info.type,
-                status: w.status,
-              })
-            }
-          })
+      // 全 areaTypes から大阪市（2710000）を探索
+      let osakaCityArea: any = null
+      for (const at of warningJson.areaTypes) {
+        if (at.areas) {
+          const target = at.areas.find((a: any) => a.code === AREA_OSAKA_CITY || a.code === '2712800' || a.name === '大阪市')
+          if (target) {
+            osakaCityArea = target
+            break
+          }
         }
+      }
+
+      if (osakaCityArea && osakaCityArea.warnings) {
+        osakaCityArea.warnings.forEach((w: any) => {
+          // status が "発表" または "継続" または "警報から注意報" のみ（"解除" は除外）
+          if (w.status === '発表' || w.status === '継続' || w.status === '警報から注意報') {
+            const info = parseWarningCode(w.code)
+            warningList.push({
+              code: w.code,
+              name: info.name,
+              type: info.type,
+              status: w.status,
+            })
+          }
+        })
       }
     }
 
@@ -386,13 +443,12 @@ export async function fetchWeatherDataFromJMA(forceRefresh = false): Promise<Wea
     return fullResult
   } catch (err: any) {
     console.error('Weather fetch error:', err)
-    // エラー時は既存キャッシュがあれば返す
     const cachedStr = localStorage.getItem(CACHE_KEY)
     if (cachedStr) {
       try {
         return JSON.parse(cachedStr)
       } catch {
-        // ignore parse error
+        // ignore
       }
     }
     throw err
