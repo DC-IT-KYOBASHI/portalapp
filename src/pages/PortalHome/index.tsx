@@ -1,7 +1,16 @@
 import { Link } from 'react-router-dom'
+import WeatherWidget from '../../components/WeatherWidget'
 
 export default function PortalHome() {
   const apps = [
+    {
+      title: 'お天気・気圧・防災情報',
+      description:
+        '大阪市のリアルタイム気象情報、気圧変化、発令中の警報・注意報、週間天気予報を確認できます。',
+      icon: '⛅',
+      path: '/weather',
+      color: 'bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20',
+    },
     {
       title: 'ポモドーロタイマー',
       description:
@@ -22,10 +31,14 @@ export default function PortalHome() {
   ]
 
   return (
-    <div className="w-full animation-fade-in">
-      <h2 className="text-xl font-bold mb-6 opacity-80 pl-2">アプリ一覧</h2>
+    <div className="w-full space-y-6 animation-fade-in">
+      {/* 大阪市のお天気ミニウィジェット */}
+      <WeatherWidget />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div>
+        <h2 className="text-xl font-bold mb-4 opacity-80 pl-2">アプリ一覧</h2>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {apps.map((app, index) => (
           <Link
             key={index}
@@ -80,6 +93,7 @@ export default function PortalHome() {
             メンバー専用・アプリデータ管理（※要パスワード）
           </p>
         </a>
+        </div>
       </div>
     </div>
   )

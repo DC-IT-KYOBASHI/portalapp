@@ -32,6 +32,7 @@ export default function Header() {
   // アプリが増えたら、ここに要素を追加するだけで自動的にメニューが拡張されます
   const menuItems = [
     { name: 'ホーム', path: '/', icon: '🏠' },
+    { name: 'お天気・防災', path: '/weather', icon: '⛅' },
     { name: 'ポモドーロ', path: '/pomodoro', icon: '🍅' },
     { name: 'プロンプト辞典', path: '/prompts', icon: '📖' },
     { name: '不具合報告・要望', path: '/feedback', icon: '📮' },
