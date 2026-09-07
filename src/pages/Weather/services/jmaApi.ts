@@ -391,8 +391,8 @@ export async function fetchWeatherDataFromJMA(forceRefresh = false): Promise<Wea
     if (cachedStr) {
       try {
         return JSON.parse(cachedStr)
-      } catch (e) {
-        // ignore
+      } catch {
+        // ignore parse error
       }
     }
     throw err
