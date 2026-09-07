@@ -34,30 +34,50 @@ export const JMA_CONFIG = {
  */
 export function getWeatherEmoji(code: string): { emoji: string; shortText: string } {
   const c = code.trim()
-  const first = c.charAt(0)
 
-  // 晴れ系 (100番台)
-  if (first === '1') {
-    if (c.includes('2') || c.includes('3')) return { emoji: '⛅', shortText: '晴れのち曇り/雨' }
-    return { emoji: '☀️', shortText: '晴れ' }
+  // 代表的な気象庁天気コード辞書
+  const telopsMap: Record<string, { emoji: string; shortText: string }> = {
+    '100': { emoji: '☀️', shortText: '晴れ' },
+    '101': { emoji: '🌤️', shortText: '晴れ時々くもり' },
+    '102': { emoji: '🌦️', shortText: '晴れ一時雨' },
+    '104': { emoji: '🌨️', shortText: '晴れ一時雪' },
+    '110': { emoji: '🌤️', shortText: '晴れのちくもり' },
+    '111': { emoji: '⛅', shortText: '晴れのちくもり' },
+    '112': { emoji: '🌦️', shortText: '晴れのち雨' },
+    '115': { emoji: '🌧️', shortText: '晴れのち雨' },
+    '200': { emoji: '☁️', shortText: 'くもり' },
+    '201': { emoji: '🌤️', shortText: 'くもり時々晴れ' },
+    '202': { emoji: '🌧️', shortText: 'くもり一時雨' },
+    '203': { emoji: '🌧️', shortText: 'くもり時々雨' },
+    '204': { emoji: '🌨️', shortText: 'くもり一時雪' },
+    '210': { emoji: '🌤️', shortText: 'くもりのち晴れ' },
+    '211': { emoji: '🌤️', shortText: 'くもりのち晴れ' },
+    '212': { emoji: '🌧️', shortText: 'くもりのち雨' },
+    '214': { emoji: '🌧️', shortText: 'くもりのち雨' },
+    '300': { emoji: '🌧️', shortText: '雨' },
+    '301': { emoji: '🌦️', shortText: '雨時々晴れ' },
+    '302': { emoji: '🌧️', shortText: '雨時々くもり' },
+    '303': { emoji: '🌨️', shortText: '雨時々雪' },
+    '311': { emoji: '🌦️', shortText: '雨のち晴れ' },
+    '313': { emoji: '🌧️', shortText: '雨のちくもり' },
+    '314': { emoji: '🌨️', shortText: '雨のち雪' },
+    '400': { emoji: '☃️', shortText: '雪' },
+    '401': { emoji: '🌤️', shortText: '雪時々晴れ' },
+    '402': { emoji: '🌧️', shortText: '雪時々雨' },
+    '411': { emoji: '🌤️', shortText: '雪のち晴れ' },
+    '413': { emoji: '🌧️', shortText: '雪のち雨' },
   }
-  // 曇り系 (200番台)
-  if (first === '2') {
-    if (c.includes('1')) return { emoji: '🌤️', shortText: '曇りのち晴れ' }
-    if (c.includes('3') || c.includes('4')) return { emoji: '🌧️', shortText: 'くもり時々雨' }
-    return { emoji: '☁️', shortText: 'くもり' }
+
+  if (telopsMap[c]) {
+    return telopsMap[c]
   }
-  // 雨系 (300番台)
-  if (first === '3') {
-    if (c.includes('4') || c.includes('雷')) return { emoji: '⛈️', shortText: '雷雨' }
-    if (c.includes('1')) return { emoji: '🌦️', shortText: '雨のち晴れ' }
-    if (c.includes('2')) return { emoji: '🌧️', shortText: '雨時々くもり' }
-    return { emoji: '🌧️', shortText: '雨' }
-  }
-  // 雪系 (400番台)
-  if (first === '4') {
-    return { emoji: '☃️', shortText: '雪' }
-  }
+
+  // 辞書にない場合のフォールバック判定
+  const first = c.charAt(0)
+  if (first === '1') return { emoji: '☀️', shortText: '晴れ' }
+  if (first === '2') return { emoji: '☁️', shortText: 'くもり' }
+  if (first === '3') return { emoji: '🌧️', shortText: '雨' }
+  if (first === '4') return { emoji: '☃️', shortText: '雪' }
 
   return { emoji: '⛅', shortText: 'くもり時々晴れ' }
 }
