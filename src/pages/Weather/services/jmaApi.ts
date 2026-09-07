@@ -7,13 +7,27 @@ import type {
   PopTimeSlot,
 } from '../types'
 
-const CACHE_KEY = 'jma_weather_osaka_cache_v3'
-const CACHE_TTL_MS = 30 * 60 * 1000 // 30分
-
-// 気象庁 エリアコード
-const AREA_OSAKA_PREF = '270000' // 大阪府
-const AREA_OSAKA_CITY = '2710000' // 大阪市
-const AMEDAS_OSAKA_STATION = '62078' // アメダス観測所：大阪（大阪市中央区大手前）
+/**
+ * 気象庁 (JMA) API 設定および定数
+ */
+export const JMA_CONFIG = {
+  BASE_URL: 'https://www.jma.go.jp/bosai',
+  AREA: {
+    OSAKA_PREF: '270000', // 大阪府（予報・警報共通）
+    OSAKA_CITY: '2710000', // 大阪市（市町村細分）
+    AMEDAS_OSAKA: '62078', // アメダス大阪観測所（大阪市中央区大手前）
+  },
+  CACHE: {
+    KEY: 'jma_weather_osaka_cache_v4',
+    TTL_MS: 30 * 60 * 1000, // 30分キャッシュ
+  },
+  PRESSURE_THRESHOLDS: {
+    HIGH: 1016, // 高気圧
+    NORMAL: 1008, // 平常
+    LOW: 1000, // 低気圧（注意）
+    // 1000未満: 警戒
+  },
+} as const
 
 /**
  * 天気コード（Telops Code）から絵文字と簡易テキストを判定
@@ -51,7 +65,7 @@ export function getWeatherEmoji(code: string): { emoji: string; shortText: strin
 /**
  * 警報・注意報コードから名称と種別を取得
  */
-function parseWarningCode(code: string): { name: string; type: 'special' | 'warning' | 'advisory' } {
+export function parseWarningCode(code: string): { name: string; type: 'special' | 'warning' | 'advisory' } {
   const codeNum = parseInt(code, 10)
   
   // 特別警報 (30番台)
@@ -116,13 +130,12 @@ function getWindDirectionText(dirIndex: number | undefined): string {
 
 /**
  * 気圧値からステータス判定（気象病・体調管理目安）
- * ※海面気圧基準 (標準 1013.25 hPa)
  */
 function getPressureStatus(hPa: number | null): 'high' | 'normal' | 'low' | 'very_low' {
   if (hPa === null) return 'normal'
-  if (hPa >= 1016) return 'high'
-  if (hPa >= 1008) return 'normal'
-  if (hPa >= 1000) return 'low'
+  if (hPa >= JMA_CONFIG.PRESSURE_THRESHOLDS.HIGH) return 'high'
+  if (hPa >= JMA_CONFIG.PRESSURE_THRESHOLDS.NORMAL) return 'normal'
+  if (hPa >= JMA_CONFIG.PRESSURE_THRESHOLDS.LOW) return 'low'
   return 'very_low'
 }
 
@@ -148,17 +161,275 @@ function formatPopTimeRange(isoStr: string): string {
 }
 
 /**
- * 気象庁 API より天気予報・最新警報(r8)・アメダス・概況を取得
+ * アメダス実況データのパース
+ */
+async function fetchAmedasObservation(): Promise<CurrentObservation | null> {
+  try {
+    const latestTimeUrl = `${JMA_CONFIG.BASE_URL}/amedas/data/latest_time.txt`
+    const latestTimeRes = await fetch(latestTimeUrl)
+    if (!latestTimeRes.ok) return null
+
+    const latestTimeRaw = (await latestTimeRes.text()).trim()
+    const timestampIso = new Date(latestTimeRaw)
+    const y = timestampIso.getFullYear()
+    const m = String(timestampIso.getMonth() + 1).padStart(2, '0')
+    const d = String(timestampIso.getDate()).padStart(2, '0')
+    const h = String(timestampIso.getHours()).padStart(2, '0')
+    const min = String(timestampIso.getMinutes()).padStart(2, '0')
+    const amedasTimeStr = `${y}${m}${d}${h}${min}00`
+
+    const amedasMapUrl = `${JMA_CONFIG.BASE_URL}/amedas/data/map/${amedasTimeStr}.json`
+    const amedasRes = await fetch(amedasMapUrl)
+    if (!amedasRes.ok) return null
+
+    const amedasMap = await amedasRes.json()
+    const osakaAmedas = amedasMap[JMA_CONFIG.AREA.AMEDAS_OSAKA]
+    if (!osakaAmedas) return null
+
+    const temp = osakaAmedas.temp ? osakaAmedas.temp[0] : null
+    const humidity = osakaAmedas.humidity ? osakaAmedas.humidity[0] : null
+    const pressure = osakaAmedas.normalPressure
+      ? osakaAmedas.normalPressure[0]
+      : osakaAmedas.pressure
+      ? osakaAmedas.pressure[0]
+      : null
+    const windSpeed = osakaAmedas.wind ? osakaAmedas.wind[0] : null
+    const windDir = osakaAmedas.windDirection ? osakaAmedas.windDirection[0] : 0
+
+    return {
+      timestamp: `${h}:${min}`,
+      temperature: temp,
+      pressure: pressure,
+      pressureStatus: getPressureStatus(pressure),
+      humidity: humidity,
+      windSpeed: windSpeed,
+      windDirectionText: getWindDirectionText(windDir),
+    }
+  } catch (err) {
+    console.warn('AMeDAS fetch warning:', err)
+    return null
+  }
+}
+
+/**
+ * 予報JSON（短期予報）のパース処理
+ */
+function parseDailyForecast(shortForecast: any): { today: DailyForecast; tomorrow: DailyForecast | null; reportDatetime: string } {
+  const reportDatetime = shortForecast.reportDatetime || new Date().toISOString()
+  
+  // 天気
+  const weatherSeries = shortForecast.timeSeries[0]
+  const osakaAreaWeather = weatherSeries.areas.find(
+    (a: any) => a.area.code === JMA_CONFIG.AREA.OSAKA_PREF || a.area.name.includes('大阪')
+  ) || weatherSeries.areas[0]
+  
+  const todayCode = osakaAreaWeather.weatherCodes?.[0] || '100'
+  const todayWeatherText = osakaAreaWeather.weathers?.[0] || '晴れ'
+  const todayWind = osakaAreaWeather.winds?.[0] || ''
+  const todayWave = osakaAreaWeather.waves?.[0] || ''
+  const todayEmoji = getWeatherEmoji(todayCode).emoji
+
+  // 降水確率 (POP)
+  const popSeries = shortForecast.timeSeries[1]
+  const osakaAreaPop = popSeries
+    ? popSeries.areas.find((a: any) => a.area.code === JMA_CONFIG.AREA.OSAKA_PREF || a.area.name.includes('大阪')) || popSeries.areas[0]
+    : null
+  const popTimeDefines: string[] = popSeries?.timeDefines || []
+  
+  const todayPops: PopTimeSlot[] = []
+  const tomorrowPops: PopTimeSlot[] = []
+
+  if (osakaAreaPop && osakaAreaPop.pops) {
+    const now = new Date()
+    const todayDateStr = now.toISOString().slice(0, 10)
+
+    osakaAreaPop.pops.forEach((p: string, idx: number) => {
+      const timeIso = popTimeDefines[idx]
+      if (!timeIso) return
+      const label = formatPopTimeRange(timeIso)
+      const itemDateStr = new Date(timeIso).toISOString().slice(0, 10)
+
+      if (itemDateStr === todayDateStr) {
+        todayPops.push({ timeLabel: label, pop: `${p}%` })
+      } else {
+        tomorrowPops.push({ timeLabel: label, pop: `${p}%` })
+      }
+    })
+  }
+
+  // 気温
+  const tempSeries = shortForecast.timeSeries[2]
+  const osakaAreaTemp = tempSeries
+    ? tempSeries.areas.find((a: any) => a.area.code === JMA_CONFIG.AREA.OSAKA_PREF || a.area.name.includes('大阪') || a.area.code === JMA_CONFIG.AREA.AMEDAS_OSAKA) || tempSeries.areas[0]
+    : null
+  const tempTimeDefines: string[] = tempSeries?.timeDefines || []
+  
+  let todayTempMax: string | null = null
+  let todayTempMin: string | null = null
+  let tomorrowTempMin: string | null = null
+  let tomorrowTempMax: string | null = null
+
+  if (osakaAreaTemp && osakaAreaTemp.temps && tempTimeDefines.length > 0) {
+    const temps: string[] = osakaAreaTemp.temps
+    const nowDateStr = new Date().toISOString().slice(0, 10)
+
+    tempTimeDefines.forEach((tDef, idx) => {
+      const tempVal = temps[idx]
+      if (!tempVal) return
+      const tDate = new Date(tDef)
+      const tDateStr = tDate.toISOString().slice(0, 10)
+      const tHours = tDate.getHours()
+
+      if (tDateStr === nowDateStr) {
+        if (tHours === 0 || tHours === 9) {
+          todayTempMax = tempVal
+        } else if (tHours === 6) {
+          todayTempMin = tempVal
+        } else {
+          todayTempMax = tempVal
+        }
+      } else {
+        if (tHours === 0 || tHours === 6) {
+          if (!tomorrowTempMin) tomorrowTempMin = tempVal
+        } else if (tHours === 9 || tHours === 12) {
+          if (!tomorrowTempMax) tomorrowTempMax = tempVal
+        }
+      }
+    })
+  }
+
+  const todayForecast: DailyForecast = {
+    date: new Date().toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric', weekday: 'short' }),
+    weatherText: todayWeatherText,
+    weatherCode: todayCode,
+    weatherEmoji: todayEmoji,
+    wind: todayWind,
+    wave: todayWave,
+    tempMin: todayTempMin,
+    tempMax: todayTempMax,
+    pops: todayPops,
+  }
+
+  let tomorrowForecast: DailyForecast | null = null
+  if (osakaAreaWeather.weatherCodes && osakaAreaWeather.weatherCodes.length > 1) {
+    const tomorrowCode = osakaAreaWeather.weatherCodes[1]
+    const tomorrowText = osakaAreaWeather.weathers?.[1] || ''
+    const tomorrowWind = osakaAreaWeather.winds?.[1] || ''
+    const tomorrowWave = osakaAreaWeather.waves?.[1] || ''
+    const tomorrowEmoji = getWeatherEmoji(tomorrowCode).emoji
+    
+    const tomorrowDate = new Date()
+    tomorrowDate.setDate(tomorrowDate.getDate() + 1)
+
+    tomorrowForecast = {
+      date: tomorrowDate.toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric', weekday: 'short' }),
+      weatherText: tomorrowText,
+      weatherCode: tomorrowCode,
+      weatherEmoji: tomorrowEmoji,
+      wind: tomorrowWind,
+      wave: tomorrowWave,
+      tempMin: tomorrowTempMin,
+      tempMax: tomorrowTempMax,
+      pops: tomorrowPops,
+    }
+  }
+
+  return { today: todayForecast, tomorrow: tomorrowForecast, reportDatetime }
+}
+
+/**
+ * 週間天気予報のパース処理
+ */
+function parseWeeklyForecast(weeklyData: any): WeeklyForecastItem[] {
+  const weeklyForecasts: WeeklyForecastItem[] = []
+  const wSeries = weeklyData?.timeSeries?.[0]
+  const wTempSeries = weeklyData?.timeSeries?.[1]
+
+  const wArea = wSeries?.areas?.find(
+    (a: any) => a.area.code === JMA_CONFIG.AREA.OSAKA_PREF || a.area.name.includes('大阪')
+  ) || wSeries?.areas?.[0]
+  const wTempArea = wTempSeries?.areas?.find(
+    (a: any) => a.area.code === JMA_CONFIG.AREA.OSAKA_PREF || a.area.name.includes('大阪')
+  ) || wTempSeries?.areas?.[0]
+
+  if (wSeries && wArea && wArea.weatherCodes) {
+    const timeDefines = wSeries.timeDefines || []
+    wArea.weatherCodes.forEach((code: string, idx: number) => {
+      const rawDate = timeDefines[idx]
+      if (!rawDate) return
+      const d = new Date(rawDate)
+      const dateStr = `${d.getMonth() + 1}/${d.getDate()}`
+      const dayStr = getDayOfWeek(rawDate)
+      const emojiObj = getWeatherEmoji(code)
+
+      const minT = wTempArea?.tempsMin?.[idx] || '-'
+      const maxT = wTempArea?.tempsMax?.[idx] || '-'
+      const pop = wArea.pops?.[idx] ? `${wArea.pops[idx]}%` : '-'
+      const rel = wArea.reliabilities?.[idx] || ''
+
+      weeklyForecasts.push({
+        date: dateStr,
+        dayOfWeek: dayStr,
+        weatherCode: code,
+        weatherEmoji: emojiObj.emoji,
+        weatherText: emojiObj.shortText,
+        tempMin: minT !== '-' ? `${minT}℃` : '-',
+        tempMax: maxT !== '-' ? `${maxT}℃` : '-',
+        pop: pop,
+        reliability: rel,
+      })
+    })
+  }
+  return weeklyForecasts
+}
+
+/**
+ * r8 警報・注意報データのパース処理
+ */
+function parseWarningData(warningJson: any): { warnings: WeatherWarningItem[]; headlineText: string } {
+  const warningList: WeatherWarningItem[] = []
+  let warningHeadline = ''
+
+  if (warningJson && Array.isArray(warningJson) && warningJson.length > 0) {
+    const latestDoc = warningJson[0]
+    warningHeadline = latestDoc.headlineText || ''
+
+    const warningData = latestDoc.warning
+    if (warningData && warningData.class20Items) {
+      const osakaCityItem = warningData.class20Items.find(
+        (item: any) => item.areaCode === JMA_CONFIG.AREA.OSAKA_CITY
+      )
+
+      if (osakaCityItem && osakaCityItem.kinds) {
+        osakaCityItem.kinds.forEach((k: any) => {
+          if (k.code && (k.status === '発表' || k.status === '継続' || k.status === '警報から注意報')) {
+            const info = parseWarningCode(k.code)
+            warningList.push({
+              code: k.code,
+              name: info.name,
+              type: info.type,
+              status: k.status,
+            })
+          }
+        })
+      }
+    }
+  }
+  return { warnings: warningList, headlineText: warningHeadline }
+}
+
+/**
+ * 気象庁 API より天気予報・最新警報(r8)・アメダス・概況を取得（キャッシュ付き）
  */
 export async function fetchWeatherDataFromJMA(forceRefresh = false): Promise<WeatherFullData> {
   // 1. キャッシュチェック
   if (!forceRefresh) {
     try {
-      const cachedStr = localStorage.getItem(CACHE_KEY)
+      const cachedStr = localStorage.getItem(JMA_CONFIG.CACHE.KEY)
       if (cachedStr) {
         const cachedData: WeatherFullData = JSON.parse(cachedStr)
         const age = Date.now() - cachedData.lastUpdated
-        if (age < CACHE_TTL_MS) {
+        if (age < JMA_CONFIG.CACHE.TTL_MS) {
           return cachedData
         }
       }
@@ -167,18 +438,17 @@ export async function fetchWeatherDataFromJMA(forceRefresh = false): Promise<Wea
     }
   }
 
-  // 2. 気象庁APIへのリクエスト（最新 r8 警報エンドポイント含む）
-  const forecastUrl = `https://www.jma.go.jp/bosai/forecast/data/forecast/${AREA_OSAKA_PREF}.json`
-  const warningUrl = `https://www.jma.go.jp/bosai/warning/data/r8/${AREA_OSAKA_PREF}.json`
-  const overviewUrl = `https://www.jma.go.jp/bosai/forecast/data/overview_forecast/${AREA_OSAKA_PREF}.json`
-  const latestTimeUrl = `https://www.jma.go.jp/bosai/amedas/data/latest_time.txt`
+  // 2. 気象庁APIへのリクエスト
+  const forecastUrl = `${JMA_CONFIG.BASE_URL}/forecast/data/forecast/${JMA_CONFIG.AREA.OSAKA_PREF}.json`
+  const warningUrl = `${JMA_CONFIG.BASE_URL}/warning/data/r8/${JMA_CONFIG.AREA.OSAKA_PREF}.json`
+  const overviewUrl = `${JMA_CONFIG.BASE_URL}/forecast/data/overview_forecast/${JMA_CONFIG.AREA.OSAKA_PREF}.json`
 
   try {
-    const [forecastRes, warningRes, overviewRes, latestTimeRes] = await Promise.all([
+    const [forecastRes, warningRes, overviewRes, currentObs] = await Promise.all([
       fetch(forecastUrl),
       fetch(warningUrl).catch(() => null),
       fetch(overviewUrl).catch(() => null),
-      fetch(latestTimeUrl).catch(() => null),
+      fetchAmedasObservation(),
     ])
 
     if (!forecastRes.ok) {
@@ -189,257 +459,28 @@ export async function fetchWeatherDataFromJMA(forceRefresh = false): Promise<Wea
     const warningJson = warningRes && warningRes.ok ? await warningRes.json() : null
     const overviewJson = overviewRes && overviewRes.ok ? await overviewRes.json() : null
 
-    // 3. アメダス最新実況データの取得
-    let currentObs: CurrentObservation | null = null
-    if (latestTimeRes && latestTimeRes.ok) {
-      try {
-        const latestTimeRaw = (await latestTimeRes.text()).trim()
-        const timestampIso = new Date(latestTimeRaw)
-        const y = timestampIso.getFullYear()
-        const m = String(timestampIso.getMonth() + 1).padStart(2, '0')
-        const d = String(timestampIso.getDate()).padStart(2, '0')
-        const h = String(timestampIso.getHours()).padStart(2, '0')
-        const min = String(timestampIso.getMinutes()).padStart(2, '0')
-        const amedasTimeStr = `${y}${m}${d}${h}${min}00`
-
-        const amedasMapUrl = `https://www.jma.go.jp/bosai/amedas/data/map/${amedasTimeStr}.json`
-        const amedasRes = await fetch(amedasMapUrl)
-        if (amedasRes.ok) {
-          const amedasMap = await amedasRes.json()
-          const osakaAmedas = amedasMap[AMEDAS_OSAKA_STATION]
-          if (osakaAmedas) {
-            const temp = osakaAmedas.temp ? osakaAmedas.temp[0] : null
-            const humidity = osakaAmedas.humidity ? osakaAmedas.humidity[0] : null
-            const pressure = osakaAmedas.normalPressure
-              ? osakaAmedas.normalPressure[0]
-              : osakaAmedas.pressure
-              ? osakaAmedas.pressure[0]
-              : null
-            const windSpeed = osakaAmedas.wind ? osakaAmedas.wind[0] : null
-            const windDir = osakaAmedas.windDirection ? osakaAmedas.windDirection[0] : 0
-
-            currentObs = {
-              timestamp: `${h}:${min}`,
-              temperature: temp,
-              pressure: pressure,
-              pressureStatus: getPressureStatus(pressure),
-              humidity: humidity,
-              windSpeed: windSpeed,
-              windDirectionText: getWindDirectionText(windDir),
-            }
-          }
-        }
-      } catch (amedasErr) {
-        console.warn('AMeDAS fetch error:', amedasErr)
-      }
-    }
-
-    // 4. 予報データ（今日・明日）の正確なパース
-    const shortForecast = forecastJson[0]
-    const reportDatetime = shortForecast.reportDatetime || new Date().toISOString()
-    
-    // timeSeries[0]: 天気
-    const weatherSeries = shortForecast.timeSeries[0]
-    const osakaAreaWeather = weatherSeries.areas.find((a: any) => a.area.code === AREA_OSAKA_PREF || a.area.name.includes('大阪')) || weatherSeries.areas[0]
-    
-    const todayCode = osakaAreaWeather.weatherCodes?.[0] || '100'
-    const todayWeatherText = osakaAreaWeather.weathers?.[0] || '晴れ'
-    const todayWind = osakaAreaWeather.winds?.[0] || ''
-    const todayWave = osakaAreaWeather.waves?.[0] || ''
-    const todayEmoji = getWeatherEmoji(todayCode).emoji
-
-    // timeSeries[1]: 降水確率 (POP)
-    const popSeries = shortForecast.timeSeries[1]
-    const osakaAreaPop = popSeries ? popSeries.areas.find((a: any) => a.area.code === AREA_OSAKA_PREF || a.area.name.includes('大阪')) || popSeries.areas[0] : null
-    const popTimeDefines: string[] = popSeries?.timeDefines || []
-    
-    const todayPops: PopTimeSlot[] = []
-    const tomorrowPops: PopTimeSlot[] = []
-
-    if (osakaAreaPop && osakaAreaPop.pops) {
-      const now = new Date()
-      const todayDateStr = now.toISOString().slice(0, 10)
-
-      osakaAreaPop.pops.forEach((p: string, idx: number) => {
-        const timeIso = popTimeDefines[idx]
-        if (!timeIso) return
-        const label = formatPopTimeRange(timeIso)
-        const itemDateStr = new Date(timeIso).toISOString().slice(0, 10)
-
-        if (itemDateStr === todayDateStr) {
-          todayPops.push({ timeLabel: label, pop: `${p}%` })
-        } else {
-          tomorrowPops.push({ timeLabel: label, pop: `${p}%` })
-        }
-      })
-    }
-
-    // timeSeries[2]: 気温 (発表時間ごとの構造差に対応)
-    const tempSeries = shortForecast.timeSeries[2]
-    const osakaAreaTemp = tempSeries ? tempSeries.areas.find((a: any) => a.area.code === AREA_OSAKA_PREF || a.area.name.includes('大阪') || a.area.code === AMEDAS_OSAKA_STATION) || tempSeries.areas[0] : null
-    const tempTimeDefines: string[] = tempSeries?.timeDefines || []
-    
-    let todayTempMax: string | null = null
-    let todayTempMin: string | null = null
-    let tomorrowTempMin: string | null = null
-    let tomorrowTempMax: string | null = null
-
-    if (osakaAreaTemp && osakaAreaTemp.temps && tempTimeDefines.length > 0) {
-      const temps: string[] = osakaAreaTemp.temps
-      const nowDateStr = new Date().toISOString().slice(0, 10)
-
-      tempTimeDefines.forEach((tDef, idx) => {
-        const tempVal = temps[idx]
-        if (!tempVal) return
-        const tDate = new Date(tDef)
-        const tDateStr = tDate.toISOString().slice(0, 10)
-        const tHours = tDate.getHours()
-
-        if (tDateStr === nowDateStr) {
-          // 今日
-          if (tHours === 0 || tHours === 9) {
-            todayTempMax = tempVal
-          } else if (tHours === 6) {
-            todayTempMin = tempVal
-          } else {
-            todayTempMax = tempVal
-          }
-        } else {
-          // 明日以降
-          if (tHours === 0 || tHours === 6) {
-            if (!tomorrowTempMin) tomorrowTempMin = tempVal
-          } else if (tHours === 9 || tHours === 12) {
-            if (!tomorrowTempMax) tomorrowTempMax = tempVal
-          }
-        }
-      })
-    }
-
-    const todayForecast: DailyForecast = {
-      date: new Date().toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric', weekday: 'short' }),
-      weatherText: todayWeatherText,
-      weatherCode: todayCode,
-      weatherEmoji: todayEmoji,
-      wind: todayWind,
-      wave: todayWave,
-      tempMin: todayTempMin,
-      tempMax: todayTempMax,
-      pops: todayPops,
-    }
-
-    // 明日の予報
-    let tomorrowForecast: DailyForecast | null = null
-    if (osakaAreaWeather.weatherCodes && osakaAreaWeather.weatherCodes.length > 1) {
-      const tomorrowCode = osakaAreaWeather.weatherCodes[1]
-      const tomorrowText = osakaAreaWeather.weathers?.[1] || ''
-      const tomorrowWind = osakaAreaWeather.winds?.[1] || ''
-      const tomorrowWave = osakaAreaWeather.waves?.[1] || ''
-      const tomorrowEmoji = getWeatherEmoji(tomorrowCode).emoji
-      
-      const tomorrowDate = new Date()
-      tomorrowDate.setDate(tomorrowDate.getDate() + 1)
-
-      tomorrowForecast = {
-        date: tomorrowDate.toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric', weekday: 'short' }),
-        weatherText: tomorrowText,
-        weatherCode: tomorrowCode,
-        weatherEmoji: tomorrowEmoji,
-        wind: tomorrowWind,
-        wave: tomorrowWave,
-        tempMin: tomorrowTempMin,
-        tempMax: tomorrowTempMax,
-        pops: tomorrowPops,
-      }
-    }
-
-    // 5. 週間天気予報 (forecastJson[1])
-    const weeklyForecasts: WeeklyForecastItem[] = []
-    if (forecastJson.length > 1) {
-      const weeklyData = forecastJson[1]
-      const wSeries = weeklyData.timeSeries?.[0]
-      const wTempSeries = weeklyData.timeSeries?.[1]
-
-      const wArea = wSeries?.areas.find((a: any) => a.area.code === AREA_OSAKA_PREF || a.area.name.includes('大阪')) || wSeries?.areas?.[0]
-      const wTempArea = wTempSeries?.areas.find((a: any) => a.area.code === AREA_OSAKA_PREF || a.area.name.includes('大阪')) || wTempSeries?.areas?.[0]
-
-      if (wSeries && wArea && wArea.weatherCodes) {
-        const timeDefines = wSeries.timeDefines || []
-        wArea.weatherCodes.forEach((code: string, idx: number) => {
-          const rawDate = timeDefines[idx]
-          if (!rawDate) return
-          const d = new Date(rawDate)
-          const dateStr = `${d.getMonth() + 1}/${d.getDate()}`
-          const dayStr = getDayOfWeek(rawDate)
-          const emojiObj = getWeatherEmoji(code)
-
-          const minT = wTempArea?.tempsMin?.[idx] || '-'
-          const maxT = wTempArea?.tempsMax?.[idx] || '-'
-          const pop = wArea.pops?.[idx] ? `${wArea.pops[idx]}%` : '-'
-          const rel = wArea.reliabilities?.[idx] || ''
-
-          weeklyForecasts.push({
-            date: dateStr,
-            dayOfWeek: dayStr,
-            weatherCode: code,
-            weatherEmoji: emojiObj.emoji,
-            weatherText: emojiObj.shortText,
-            tempMin: minT !== '-' ? `${minT}℃` : '-',
-            tempMax: maxT !== '-' ? `${maxT}℃` : '-',
-            pop: pop,
-            reliability: rel,
-          })
-        })
-      }
-    }
-
-    // 6. 警報・注意報のパース（最新 r8 形式：大阪市 AREA_OSAKA_CITY: 2710000）
-    const warningList: WeatherWarningItem[] = []
-    let warningHeadline = ''
-
-    if (warningJson && Array.isArray(warningJson) && warningJson.length > 0) {
-      const latestWarningDoc = warningJson[0]
-      warningHeadline = latestWarningDoc.headlineText || ''
-
-      const warningData = latestWarningDoc.warning
-      if (warningData && warningData.class20Items) {
-        // 大阪市（2710000）の市町村アイテムを抽出
-        const osakaCityItem = warningData.class20Items.find(
-          (item: any) => item.areaCode === AREA_OSAKA_CITY
-        )
-
-        if (osakaCityItem && osakaCityItem.kinds) {
-          osakaCityItem.kinds.forEach((k: any) => {
-            if (k.code && (k.status === '発表' || k.status === '継続' || k.status === '警報から注意報')) {
-              const info = parseWarningCode(k.code)
-              warningList.push({
-                code: k.code,
-                name: info.name,
-                type: info.type,
-                status: k.status,
-              })
-            }
-          })
-        }
-      }
-    }
+    // 3. 各モジュールパース処理の呼び出し
+    const { today, tomorrow, reportDatetime } = parseDailyForecast(forecastJson[0])
+    const weekly = forecastJson.length > 1 ? parseWeeklyForecast(forecastJson[1]) : []
+    const { warnings, headlineText } = parseWarningData(warningJson)
 
     const fullResult: WeatherFullData = {
       lastUpdated: Date.now(),
       reportDatetime: reportDatetime,
       cityName: '大阪市（京橋・中央区周辺）',
       current: currentObs,
-      today: todayForecast,
-      tomorrow: tomorrowForecast,
-      weekly: weeklyForecasts,
-      warnings: warningList,
-      warningHeadlineText: warningHeadline,
+      today: today,
+      tomorrow: tomorrow,
+      weekly: weekly,
+      warnings: warnings,
+      warningHeadlineText: headlineText,
       overviewText: overviewJson?.text || '',
-      hasWarnings: warningList.length > 0,
+      hasWarnings: warnings.length > 0,
     }
 
     // キャッシュ保存
     try {
-      localStorage.setItem(CACHE_KEY, JSON.stringify(fullResult))
+      localStorage.setItem(JMA_CONFIG.CACHE.KEY, JSON.stringify(fullResult))
     } catch {
       // ignore
     }
@@ -447,7 +488,7 @@ export async function fetchWeatherDataFromJMA(forceRefresh = false): Promise<Wea
     return fullResult
   } catch (err: any) {
     console.error('Weather fetch error:', err)
-    const cachedStr = localStorage.getItem(CACHE_KEY)
+    const cachedStr = localStorage.getItem(JMA_CONFIG.CACHE.KEY)
     if (cachedStr) {
       try {
         return JSON.parse(cachedStr)
