@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { TimerCard } from './components/TimerCard'
 import type { TimerData } from '../../types'
+import BackToHomeButton from '../../components/BackToHomeButton'
 
 const LOCAL_STORAGE_KEY = 'lolipop_portal_timers'
 const MAX_TIMERS = 4 // タイマーの最大数制限
@@ -15,7 +16,7 @@ export default function PomodoroTimer() {
     if (saved) {
       try {
         setTimers(JSON.parse(saved))
-      } catch (e) {
+      } catch {
         console.error('Failed to parse saved timers')
         setTimers([{ id: 'default-1', taskName: '', workMinutes: 25, breakMinutes: 5, isActive: false, isWorkMode: true, timeLeft: 25 * 60, lastUpdated: Date.now() }])
       }
@@ -65,6 +66,7 @@ export default function PomodoroTimer() {
       {/* ページ内ヘッダー */}
       <div className="flex justify-between items-end mb-6 border-b border-slate-300 dark:border-slate-700 pb-4">
         <div>
+          <BackToHomeButton />
           <h2 className="text-2xl font-black tracking-tight flex items-center gap-2">
             🍅 ポモドーロタイマー
           </h2>

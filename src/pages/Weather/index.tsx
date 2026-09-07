@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
 import { fetchWeatherDataFromJMA } from './services/jmaApi'
 import type { WeatherFullData } from './types'
 import CurrentWeatherCard from './components/CurrentWeatherCard'
 import WarningAlertBanner from './components/WarningAlertBanner'
 import WeeklyForecastTable from './components/WeeklyForecastTable'
+import BackToHomeButton from '../../components/BackToHomeButton'
 
 export default function Weather() {
   const [data, setData] = useState<WeatherFullData | null>(null)
@@ -48,15 +48,7 @@ export default function Weather() {
       {/* ページヘッダー */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <Link
-              to="/"
-              className="text-xs font-bold text-slate-500 hover:text-blue-500 transition-colors flex items-center gap-1"
-            >
-              <span>←</span>
-              <span>ホームに戻る</span>
-            </Link>
-          </div>
+          <BackToHomeButton />
           <h1 className="text-2xl font-bold flex items-center gap-2.5">
             <span className="text-3xl">⛅</span>
             <span>大阪市 お天気・気圧・防災情報</span>

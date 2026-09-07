@@ -1,5 +1,6 @@
-﻿import { useState } from 'react'
+import { useState } from 'react'
 import { useApi } from '../../hooks/useApi'
+import BackToHomeButton from '../../components/BackToHomeButton'
 
 export default function FeedbackForm() {
   const [type, setType] = useState<'bug' | 'feature'>('bug')
@@ -30,6 +31,7 @@ export default function FeedbackForm() {
   return (
     <div className="w-full animation-fade-in flex flex-col max-w-3xl mx-auto">
       <div className="mb-8">
+        <BackToHomeButton />
         <h2 className="text-2xl font-black tracking-tight flex items-center gap-2">
           📮 不具合報告・ご要望
         </h2>

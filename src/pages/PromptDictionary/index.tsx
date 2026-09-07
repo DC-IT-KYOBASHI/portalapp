@@ -3,6 +3,7 @@ import { promptCategories, type PromptCategory, initialPrompts } from './data/pr
 import type { PromptData } from '../../types'
 import { useApi } from '../../hooks/useApi'
 import PromptModal from './components/PromptModal'
+import BackToHomeButton from '../../components/BackToHomeButton'
 
 export default function PromptDictionary() {
   const [searchQuery, setSearchQuery] = useState('')
@@ -35,6 +36,7 @@ export default function PromptDictionary() {
       {/* 左サイドバー: カテゴリナビゲーション */}
       <aside className="w-full md:w-64 flex-shrink-0">
         <div className="glass-panel p-6 rounded-3xl sticky top-6">
+          <BackToHomeButton className="mb-4" />
           <h3 className="font-bold mb-4 opacity-70">📂 カテゴリ</h3>
           <nav className="flex flex-col gap-2">
             <button

@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { useApi } from '../../hooks/useApi'
 import type { Changelog as ChangelogType } from '../../types'
+import BackToHomeButton from '../../components/BackToHomeButton'
 
 export default function Changelog() {
   const { data, error, isLoading, execute } = useApi<ChangelogType[]>([])
@@ -13,6 +14,9 @@ export default function Changelog() {
   return (
     <div className="max-w-3xl mx-auto animation-fade-in pb-12">
       <div className="text-center mb-10">
+        <div className="flex justify-start">
+          <BackToHomeButton />
+        </div>
         <h1 className="text-3xl font-bold mb-4 flex items-center justify-center gap-3">
           <span className="text-4xl">📝</span>
           更新履歴
