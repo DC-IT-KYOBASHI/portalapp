@@ -13,7 +13,7 @@ export default function PromptDictionary() {
   const { data, error, isLoading, execute } = useApi<PromptData[]>(initialPrompts)
   const prompts = data || initialPrompts
 
-  // 初期ロード時にWP（またはモック）からデータを取得する
+  // 初期ロード時にサーバー（またはモック）からデータを取得する
   useEffect(() => {
     execute('?api=true&module=PromptDictionary')
   }, [execute])
@@ -108,7 +108,7 @@ export default function PromptDictionary() {
         {isLoading ? (
           <div className="glass-panel rounded-3xl p-12 flex flex-col items-center justify-center opacity-70">
             <div className="animate-spin text-4xl mb-4">⚙️</div>
-            <p className="font-bold">WordPressからプロンプトを取得しています...</p>
+            <p className="font-bold">データを読み込み中...</p>
           </div>
         ) : error ? (
           <div className="glass-panel rounded-3xl p-12 flex flex-col items-center justify-center text-red-500">
