@@ -41,11 +41,11 @@ export default function PromptDictionary() {
           <nav className="flex flex-col gap-2">
             <button
               onClick={() => setSelectedCategory('すべて')}
-              className={`text-left px-4 py-2 rounded-xl transition-colors ${
-                selectedCategory === 'すべて'
+              className={`text-left px-4 py-2 rounded-xl transition-colors 
+                ${selectedCategory === 'すべて'
                   ? 'bg-blue-500 text-white font-bold'
                   : 'hover:bg-white/20 dark:hover:bg-white/10'
-              }`}
+                }`}
             >
               すべて
             </button>
@@ -53,11 +53,11 @@ export default function PromptDictionary() {
               <button
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
-                className={`text-left px-4 py-2 rounded-xl transition-colors ${
-                  selectedCategory === cat
+                className={`text-left px-4 py-2 rounded-xl transition-colors 
+                  ${selectedCategory === cat
                     ? 'bg-blue-500 text-white font-bold'
                     : 'hover:bg-white/20 dark:hover:bg-white/10'
-                }`}
+                  }`}
               >
                 {cat}
               </button>
@@ -74,9 +74,9 @@ export default function PromptDictionary() {
             <h2 className="text-3xl font-black tracking-tight flex items-center gap-3">
               🤖 AIプロンプト逆引き辞典
             </h2>
-            <a 
-              href="https://dcitex-kyobashi-se.joinus-dc-kyobashi.com/?module=PromptDictionary" 
-              target="_blank" 
+            <a
+              href="https://dcitex-kyobashi-se.joinus-dc-kyobashi.com/?module=PromptDictionary"
+              target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1 text-sm bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-500/20 px-3 py-1.5 rounded-lg transition-colors font-bold w-fit border border-blue-500/20"
             >
@@ -105,15 +105,17 @@ export default function PromptDictionary() {
           {isLoading && <span className="text-blue-500 animate-pulse">データを読み込み中...</span>}
         </div>
 
+        {error && (
+          <div className="mb-6 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-400 flex items-center gap-3 text-sm font-bold">
+            <span>⚠️</span>
+            <span>サーバーとの通信に失敗したため、ローカルに保持されている初期データを表示しています。（エラー: {error}）</span>
+          </div>
+        )}
+
         {isLoading ? (
           <div className="glass-panel rounded-3xl p-12 flex flex-col items-center justify-center opacity-70">
             <div className="animate-spin text-4xl mb-4">⚙️</div>
             <p className="font-bold">データを読み込み中...</p>
-          </div>
-        ) : error ? (
-          <div className="glass-panel rounded-3xl p-12 flex flex-col items-center justify-center text-red-500">
-            <span className="text-4xl mb-4">⚠️</span>
-            <p className="font-bold">{error}</p>
           </div>
         ) : filteredPrompts.length === 0 ? (
           <div className="glass-panel rounded-3xl p-12 flex flex-col items-center justify-center opacity-50">
