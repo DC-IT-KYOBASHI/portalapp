@@ -41,7 +41,8 @@ export default function PromptDictionary() {
           <nav className="flex flex-col gap-2">
             <button
               onClick={() => setSelectedCategory('すべて')}
-              className={`text-left px-4 py-2 rounded-xl transition-colors ${selectedCategory === 'すべて'
+              className={`text-left px-4 py-2 rounded-xl transition-colors 
+                ${selectedCategory === 'すべて'
                   ? 'bg-blue-500 text-white font-bold'
                   : 'hover:bg-white/20 dark:hover:bg-white/10'
                 }`}
@@ -52,7 +53,8 @@ export default function PromptDictionary() {
               <button
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
-                className={`text-left px-4 py-2 rounded-xl transition-colors ${selectedCategory === cat
+                className={`text-left px-4 py-2 rounded-xl transition-colors 
+                  ${selectedCategory === cat
                     ? 'bg-blue-500 text-white font-bold'
                     : 'hover:bg-white/20 dark:hover:bg-white/10'
                   }`}
