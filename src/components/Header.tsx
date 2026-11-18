@@ -36,6 +36,7 @@ export default function Header() {
     { name: 'お天気・防災', path: '/weather', icon: '⛅' },
     { name: 'ポモドーロ', path: '/pomodoro', icon: '🍅' },
     { name: 'プロンプト辞典', path: '/prompts', icon: '📖' },
+    { name: '資格学習ナビ', path: '/certifications', icon: '🎓' },
     { name: '不具合報告・要望', path: '/feedback', icon: '📮' },
     { name: '更新履歴', path: '/changelog', icon: '📝' },
   ]

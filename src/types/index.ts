@@ -30,3 +30,22 @@ export interface TimerData {
   timeLeft?: number;
   lastUpdated?: number;
 }
+
+export interface StudyLink {
+  label: string;
+  url: string;
+}
+
+export interface CertificationData {
+  id: string;
+  title: string;
+  category: string;
+  level: string;
+  examInfo: string;
+  fee: string;
+  description: string;
+  advice: string;
+  officialUrl: string;
+  applyUrl: string;
+  studyLinks: StudyLink[];
+}

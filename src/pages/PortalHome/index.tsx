@@ -27,6 +27,14 @@ export default function PortalHome() {
       path: '/prompts',
       color: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20',
     },
+    {
+      title: '資格学習ナビ',
+      description:
+        'IT資格や簿記・MOSなどの公式概要、申し込みページ、無料過去問・学習サイトをまとめて確認できます。',
+      icon: '🎓',
+      path: '/certifications',
+      color: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
+    },
     // 将来他のアプリを追加する場合はここに追記
   ]
 
