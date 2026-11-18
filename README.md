@@ -47,6 +47,7 @@ React + TypeScript + Vite で構築されており、バックエンドAPI（`sy
     * `Weather/` : 大阪市 お天気・気圧・防災情報ページ
     * `PomodoroTimer/` : ポモドーロタイマー画面
     * `PromptDictionary/` : AIプロンプト逆引き辞典画面
+    * `Certifications/` : 資格学習ナビ（公式・申込・無料学習リンク集）画面
     * `FeedbackForm/` : 不具合報告・ご要望送信フォーム
     * `Changelog/` : 更新履歴タイムライン
   * `hooks/` : 共通カスタムフック（API非同期通信を共通化する `useApi.ts`）
@@ -171,12 +172,9 @@ npm run build
 
 ### アップロード (デプロイ)
 
-**【GitHub Pages への公開（推奨）】**
-以下のコマンドを実行します。
-```bash
-npm run deploy
-```
-自動的にビルドが実行され、`gh-pages` ブランチにプッシュされて即座に Web 上へ公開されます。
+**【GitHub Pages への公開（推奨：GitHub Actions 自動デプロイ）】**
+`.github/workflows/deploy.yml` により、`main` ブランチへのプッシュをトリガーとして Node.js 24 環境で自動的にビルド（`npm run build`）および GitHub Pages へのデプロイが実行されます。
+普段の開発は作業ブランチ（`feature/xxx` 等）で行い、ローカルで動作確認後に `main` ブランチへマージ・プッシュしてください。
 
 **【ロリポップサーバー等の一般Webサーバーへ公開する場合】**
 生成された `dist` フォルダの **中身すべて** を、FTPソフト等を使用してサーバーの公開ディレクトリ（ルート）にアップロードしてください。

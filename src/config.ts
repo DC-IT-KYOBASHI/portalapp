@@ -1,6 +1,6 @@
 export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/';
 
 export const APP_CONFIG = {
-  VERSION: 'v1.0.1',
+  VERSION: 'v1.1.0',
   PORTAL_NAME: import.meta.env.VITE_SITE_TITLE || 'DCITエキスパート京橋オフィス アプリ集',
 };
