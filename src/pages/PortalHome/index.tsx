@@ -1,8 +1,17 @@
 import { Link } from 'react-router-dom'
 import WeatherWidget from '../../components/WeatherWidget'
 
+interface PortalAppItem {
+  title: string
+  description: string
+  icon: string
+  path?: string
+  href?: string
+  color: string
+}
+
 export default function PortalHome() {
-  const apps = [
+  const apps: PortalAppItem[] = [
     {
       title: 'お天気・気圧・防災情報',
       description:
@@ -35,6 +44,14 @@ export default function PortalHome() {
       path: '/certifications',
       color: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
     },
+    {
+      title: 'エアレジCSV統合（経理・オフィスコンビニ用）',
+      description:
+        '単日ごとのエアレジ売上CSV（最大12ファイル）を、スマート利益管理アプリ取込用の日別統合CSVへブラウザ内のみで変換します。',
+      icon: '🧾',
+      href: `${import.meta.env.BASE_URL}airregi-csv/index.html`,
+      color: 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20',
+    },
     // 将来他のアプリを追加する場合はここに追記
   ]
 
@@ -47,19 +64,45 @@ export default function PortalHome() {
         <h2 className="text-xl font-bold mb-4 opacity-80 pl-2">アプリ一覧</h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {apps.map((app, index) => (
-          <Link
-            key={index}
-            to={app.path}
-            className={`glass-panel rounded-3xl p-6 flex flex-col items-start transition-all duration-300 hover:shadow-xl hover:-translate-y-1 group border border-white/40 dark:border-white/10 ${app.color.split(' ')[0]}`}
-          >
-            <div className={`text-4xl mb-4 p-4 rounded-2xl ${app.color}`}>{app.icon}</div>
-            <h3 className="text-xl font-bold mb-2 group-hover:text-blue-500 transition-colors">
-              {app.title}
-            </h3>
-            <p className="text-sm opacity-70 leading-relaxed">{app.description}</p>
-          </Link>
-        ))}
+        {apps.map((app, index) => {
+          const cardClassName = `glass-panel rounded-3xl p-6 flex flex-col items-start transition-all duration-300 hover:shadow-xl hover:-translate-y-1 group border border-white/40 dark:border-white/10 ${app.color.split(' ')[0]}`
+          const cardContent = (
+            <>
+              <div className="flex justify-between items-start w-full mb-4">
+                <div className={`text-4xl p-4 rounded-2xl ${app.color}`}>{app.icon}</div>
+                {app.href && (
+                  <span
+                    aria-hidden="true"
+                    className="text-xs font-bold opacity-50 group-hover:opacity-100 transition-opacity"
+                  >
+                    ↗
+                  </span>
+                )}
+              </div>
+              <h3 className="text-xl font-bold mb-2 group-hover:text-blue-500 transition-colors">
+                {app.title}
+                {app.href && <span className="sr-only">（新しいタブで開く）</span>}
+              </h3>
+              <p className="text-sm opacity-70 leading-relaxed">{app.description}</p>
+            </>
+          )
+
+          return app.href ? (
+            <a
+              key={index}
+              href={app.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={cardClassName}
+            >
+              {cardContent}
+            </a>
+          ) : (
+            <Link key={index} to={app.path || '/'} className={cardClassName}>
+              {cardContent}
+            </Link>
+          )
+        })}
 
         {/* 不具合・要望フォーム リンク */}
         <Link
