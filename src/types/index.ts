@@ -49,3 +49,8 @@ export interface CertificationData {
   applyUrl: string;
   studyLinks: StudyLink[];
 }
+
+export interface CertificationsApiResponse {
+  updatedAt?: string;
+  items: CertificationData[];
+}

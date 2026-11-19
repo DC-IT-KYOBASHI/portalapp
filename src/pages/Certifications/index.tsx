@@ -1,12 +1,22 @@
 import { useEffect, useMemo, useState } from 'react'
-import { certificationCategories, initialCertifications } from './data/certifications'
-import type { CertificationData } from '../../types'
+import {
+  certificationCategories,
+  CERTIFICATIONS_UPDATED_AT,
+  initialCertifications,
+} from './data/certifications'
+import type { CertificationData, CertificationsApiResponse } from '../../types'
 import { useApi } from '../../hooks/useApi'
 import { API_BASE_URL } from '../../config'
 import BackToHomeButton from '../../components/BackToHomeButton'
 
 function isSafeHttpUrl(url?: string): url is string {
   return typeof url === 'string' && /^https?:\/\//i.test(url.trim())
+}
+
+function formatJapaneseDate(dateStr: string): string {
+  const match = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(dateStr.trim())
+  if (!match) return dateStr
+  return `${match[1]}年${Number(match[2])}月${Number(match[3])}日`
 }
 
 const categoryBadgeColors: Record<string, string> = {
@@ -26,10 +36,31 @@ export default function Certifications() {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<string>('すべて')
 
-  const { data, error, isLoading, execute } =
-    useApi<CertificationData[]>(initialCertifications)
-  const certifications =
-    Array.isArray(data) && data.length > 0 ? data : initialCertifications
+  const { data, error, isLoading, execute } = useApi<
+    CertificationData[] | CertificationsApiResponse
+  >({
+    updatedAt: CERTIFICATIONS_UPDATED_AT,
+    items: initialCertifications,
+  })
+
+  const { certifications, updatedAt } = useMemo(() => {
+    if (Array.isArray(data)) {
+      return {
+        certifications: data.length > 0 ? data : initialCertifications,
+        updatedAt: CERTIFICATIONS_UPDATED_AT,
+      }
+    }
+    if (data && Array.isArray(data.items) && data.items.length > 0) {
+      return {
+        certifications: data.items,
+        updatedAt: data.updatedAt || CERTIFICATIONS_UPDATED_AT,
+      }
+    }
+    return {
+      certifications: initialCertifications,
+      updatedAt: CERTIFICATIONS_UPDATED_AT,
+    }
+  }, [data])
 
   useEffect(() => {
     execute('?api=true&module=Certifications')
@@ -123,8 +154,15 @@ export default function Certifications() {
               </span>
             </a>
           </div>
-          <p className="opacity-75 mb-6 leading-relaxed">
+          <p className="opacity-75 mb-3 leading-relaxed">
             IT資格・オフィス資格などの公式概要、受験申し込みページ、無料で使える過去問・学習サイトをまとめています。各ボタンからそのまま別タブで開けます。
+          </p>
+          <p className="inline-flex items-center gap-2 text-xs font-bold px-3 py-1.5 rounded-xl bg-slate-500/10 border border-slate-500/20 opacity-85 mb-6">
+            <span aria-hidden="true">📅</span>
+            <span>
+              {formatJapaneseDate(updatedAt)}
+              時点の情報です（最新の受験料・試験要項は必ず公式ページもあわせてご確認ください）
+            </span>
           </p>
 
           <div className="relative">

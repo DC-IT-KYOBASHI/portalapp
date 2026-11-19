@@ -15,6 +15,8 @@ export const certificationCategories: CertificationCategory[] = [
   'その他',
 ]
 
+export const CERTIFICATIONS_UPDATED_AT = '2026-11-19'
+
 export const initialCertifications: CertificationData[] = [
   {
     id: 'cert-itpass',
@@ -94,7 +96,7 @@ export const initialCertifications: CertificationData[] = [
     category: 'オフィス・事務・会計',
     level: '事務・経理・IT全職種',
     examInfo: 'ネット試験（CBT随時） / 統一試験（年3回）',
-    fee: '3級 3,300円 / 2級 5,500円（税込）',
+    fee: '3級 3,300円 / 2級 5,500円（税込・ネット試験は別途事務手数料550円）',
     description:
       '企業の財務状況やお金の流れ（仕訳・貸借対照表・損益計算書）を読み解くスキルを証明。一般事務・経理だけでなく、IT系業務アプリ開発やビジネス理解にも直結します。',
     advice:
@@ -118,7 +120,7 @@ export const initialCertifications: CertificationData[] = [
     category: 'オフィス・事務・会計',
     level: '実務基礎・Office操作証明',
     examInfo: '随時試験（テストセンター） / 全国一斉試験',
-    fee: '一般レベル 10,780円（税込）',
+    fee: '一般 12,980円（税込・一般/上級共通・学割9,680円）',
     description:
       'Word、Excel、PowerPointなどのMicrosoft Office製品の実務操作スキルを客観的に証明する国際資格。パソコン操作の証明として履歴書で広く評価されます。',
     advice:
@@ -221,7 +223,7 @@ export const initialCertifications: CertificationData[] = [
     category: 'AI・データサイエンス',
     level: 'データ活用・統計基礎',
     examInfo: 'CBT方式（年3回実施期間） / 100分・100問',
-    fee: '一般 10,000円（税込）',
+    fee: '一般 11,000円（税込）',
     description:
       'データサイエンティスト協会が実施。データサイエンス力（統計・数理・機械学習）、データエンジニアリング力（SQL・IT基礎）、ビジネス力の3領域をバランスよく評価します。',
     advice:
