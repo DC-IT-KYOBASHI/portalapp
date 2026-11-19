@@ -31,12 +31,13 @@ export default function Header() {
 
   // --- ナビゲーションメニューの定義 ---
   // アプリが増えたら、ここに要素を追加するだけで自動的にメニューが拡張されます
-  const menuItems = [
+  const menuItems: Array<{ name: string; icon: string; path?: string; href?: string }> = [
     { name: 'ホーム', path: '/', icon: '🏠' },
     { name: 'お天気・防災', path: '/weather', icon: '⛅' },
     { name: 'ポモドーロ', path: '/pomodoro', icon: '🍅' },
     { name: 'プロンプト辞典', path: '/prompts', icon: '📖' },
     { name: '資格学習ナビ', path: '/certifications', icon: '🎓' },
+    { name: 'エアレジCSV統合', href: `${import.meta.env.BASE_URL}airregi-csv/index.html`, icon: '🧾' },
     { name: '不具合報告・要望', path: '/feedback', icon: '📮' },
     { name: '更新履歴', path: '/changelog', icon: '📝' },
   ]
@@ -100,20 +101,40 @@ export default function Header() {
       {isMenuOpen && (
         <div className="absolute top-full left-0 right-0 mt-2 p-4 glass-panel rounded-2xl flex flex-col gap-2 shadow-2xl border border-slate-200/50 dark:border-slate-700/50 animation-fade-in">
           <div className="text-xs font-bold text-slate-500 mb-2 px-2 uppercase tracking-widest">Menu</div>
-          {menuItems.map((item) => (
-            <Link
-              key={item.path}
-              to={item.path}
-              className={`p-3 rounded-xl font-bold flex items-center gap-3 transition-colors
-                ${location.pathname === item.path 
-                  ? 'bg-teal-500/10 text-teal-600 dark:text-teal-400' 
-                  : 'hover:bg-slate-100 dark:hover:bg-white/5'
-                }`}
-            >
-              <span className="text-xl">{item.icon}</span>
-              {item.name}
-            </Link>
-          ))}
+          {menuItems.map((item) =>
+            item.href ? (
+              <a
+                key={item.href}
+                href={item.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setIsMenuOpen(false)}
+                className="p-3 rounded-xl font-bold flex items-center justify-between transition-colors hover:bg-slate-100 dark:hover:bg-white/5"
+              >
+                <span className="flex items-center gap-3">
+                  <span className="text-xl">{item.icon}</span>
+                  {item.name}
+                  <span className="sr-only">（新しいタブで開く）</span>
+                </span>
+                <span aria-hidden="true" className="text-xs opacity-50">
+                  ↗
+                </span>
+              </a>
+            ) : (
+              <Link
+                key={item.path}
+                to={item.path || '/'}
+                className={`p-3 rounded-xl font-bold flex items-center gap-3 transition-colors
+                  ${location.pathname === item.path 
+                    ? 'bg-teal-500/10 text-teal-600 dark:text-teal-400' 
+                    : 'hover:bg-slate-100 dark:hover:bg-white/5'
+                  }`}
+              >
+                <span className="text-xl">{item.icon}</span>
+                {item.name}
+              </Link>
+            )
+          )}
           
           <div className="h-px w-full bg-slate-200 dark:bg-slate-700 my-2"></div>
           

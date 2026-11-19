@@ -56,7 +56,8 @@ React + TypeScript + Vite で構築されており、バックエンドAPI（`sy
   * `config.ts` : アプリ全体のバージョン・サイト名・APIベースURL設定
   * `App.tsx` : アプリ全体のルーティング設定
   * `index.css` : 全体のデザイン・スタイル設定（Tailwind CSS）
-* `public/` : 静的ファイル（`.htaccess` や `favicon.ico` など、ビルド時にそのまま出力されるファイル）
+* `public/` : 静的ファイル（`.htaccess`、`favicon.ico`、独立ツール `airregi-csv/index.html` など、ビルド時にそのまま出力されるファイル）
+  * `airregi-csv/index.html` : 経理部・オフィスコンビニ向け「エアレジCSV統合」の単一HTML版（`Office-Convenience-Store/tools/airregi_converter/web/site/index.html` 由来＋ポータル戻りリンク付き）。SHA-256ベースの厳格なCSPハッシュが埋め込まれているため、元ツール更新時はビルド済み `site/index.html` をベースにポータル戻りリンクと `style-src` のSHA-256ハッシュを再計算して反映してください。
 * `tests/` : 自動テストコード（`weather.test.mjs` 等）
 * `.env` / `.env.production` : 環境変数設定
 
