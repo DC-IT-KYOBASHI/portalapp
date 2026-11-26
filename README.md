@@ -48,6 +48,7 @@ React + TypeScript + Vite で構築されており、バックエンドAPI（`sy
     * `PomodoroTimer/` : ポモドーロタイマー画面
     * `PromptDictionary/` : AIプロンプト逆引き辞典画面
     * `Certifications/` : 資格学習ナビ（公式・申込・無料学習リンク集）画面
+    * `Portfolios/` : ポートフォリオ一覧（事業所内で制作したポートフォリオ紹介）画面
     * `FeedbackForm/` : 不具合報告・ご要望送信フォーム
     * `Changelog/` : 更新履歴タイムライン
   * `hooks/` : 共通カスタムフック（API非同期通信を共通化する `useApi.ts`）

@@ -54,3 +54,13 @@ export interface CertificationsApiResponse {
   updatedAt?: string;
   items: CertificationData[];
 }
+
+export interface PortfolioData {
+  id: string;
+  title: string;
+  author: string;
+  description: string;
+  demoUrl: string;
+  githubUrl: string;
+  thumbnail: string;
+}

@@ -3,6 +3,7 @@ import PortalHome from './pages/PortalHome'
 import PomodoroTimer from './pages/PomodoroTimer'
 import PromptDictionary from './pages/PromptDictionary'
 import Certifications from './pages/Certifications'
+import Portfolios from './pages/Portfolios'
 import FeedbackForm from './pages/FeedbackForm'
 import Changelog from './pages/Changelog'
 import Weather from './pages/Weather'
@@ -37,6 +38,7 @@ function App() {
           <Route path="/pomodoro" element={<PomodoroTimer />} />
           <Route path="/prompts" element={<PromptDictionary />} />
           <Route path="/certifications" element={<Certifications />} />
+          <Route path="/portfolios" element={<Portfolios />} />
           <Route path="/feedback" element={<FeedbackForm />} />
           <Route path="/changelog" element={<Changelog />} />
         </Routes>
