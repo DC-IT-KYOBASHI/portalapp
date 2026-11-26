@@ -38,6 +38,7 @@ export default function Header() {
     { name: 'プロンプト辞典', path: '/prompts', icon: '📖' },
     { name: '資格学習ナビ', path: '/certifications', icon: '🎓' },
     { name: 'エアレジCSV統合', href: `${import.meta.env.BASE_URL}airregi-csv/index.html`, icon: '🧾' },
+    { name: 'ポートフォリオ一覧', path: '/portfolios', icon: '💼' },
     { name: '不具合報告・要望', path: '/feedback', icon: '📮' },
     { name: '更新履歴', path: '/changelog', icon: '📝' },
   ]

@@ -52,6 +52,14 @@ export default function PortalHome() {
       href: `${import.meta.env.BASE_URL}airregi-csv/index.html`,
       color: 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20',
     },
+    {
+      title: 'ポートフォリオ一覧',
+      description:
+        '事業所で制作したWebアプリやサイトなどのポートフォリオ作品をサムネイル・リンク付きで紹介しています。',
+      icon: '💼',
+      path: '/portfolios',
+      color: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20',
+    },
     // 将来他のアプリを追加する場合はここに追記
   ]
 
